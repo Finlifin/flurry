@@ -1,0 +1,31 @@
+fn_def -> pub? pure? comptime? inline? fn id(parameters) (-> #? !? expr)? where_clauses? { statement* expr }
+tfn_def -> pub? pure? comptime? inline? fn id<parameters> (-> #? !? expr)? where_clauses? { statement* expr }
+eff_def -> 
+impl_def -> 
+test_def -> 
+parameters -> listof(pair(pattern, expr) | assign(pair(symbol, expr), symbol) | implicit_arg)
+
+fn_expr -> fn ( (parameters) )? (-> #? !? expr)? { statement* expr }
+
+
+
+struct_expr -> struct { (id | fn_def | eff_def | statement | impl_def)? }
+
+
+
+
+union_expr -> union { ... }
+
+
+
+
+enum_expr -> enum { ...  }
+
+
+tuple_expr -> tuple { ... }
+
+
+
+err_handler_expr -> handle (parameters)? error expr { ... }
+err_handler_expr -> handle expr { ... }
+
