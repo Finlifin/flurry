@@ -12,7 +12,7 @@ nodes_capacity: usize,
 prisma: std.ArrayList(Index),
 
 tokens: *const Soa(Token),
-ts_cusor: usize = 0,
+cursor: usize = 0,
 
 err: void = undefined,
 
@@ -39,8 +39,8 @@ pub fn pFn(p: *Self) Index {
     const fn_name =
         p.push(
         .id,
-        p.tokens.items(.from)[p.ts_cusor],
-        p.tokens.items(.to)[p.ts_cusor],
+        p.tokens.items(.from)[p.cursor],
+        p.tokens.items(.to)[p.cursor],
     ) catch unreachable;
     const dependent_args = blk: {
         if (!p.eatToken(.@"<"))
@@ -122,23 +122,23 @@ fn pPrefixExpr(p: *Self) Index {
         // todo: 23u32, "char"cstr, 23.23f32
         .int => p.push(
             .int,
-            p.tokens.items(.from)[p.ts_cusor],
-            p.tokens.items(.to)[p.ts_cusor],
+            p.tokens.items(.from)[p.cursor],
+            p.tokens.items(.to)[p.cursor],
         ) catch unreachable,
         .real => p.push(
             .real,
-            p.tokens.items(.from)[p.ts_cusor],
-            p.tokens.items(.to)[p.ts_cusor],
+            p.tokens.items(.from)[p.cursor],
+            p.tokens.items(.to)[p.cursor],
         ) catch unreachable,
         .id => p.push(
             .id,
-            p.tokens.items(.from)[p.ts_cusor],
-            p.tokens.items(.to)[p.ts_cusor],
+            p.tokens.items(.from)[p.cursor],
+            p.tokens.items(.to)[p.cursor],
         ) catch unreachable,
         .str => p.push(
             .str,
-            p.tokens.items(.from)[p.ts_cusor],
-            p.tokens.items(.to)[p.ts_cusor],
+            p.tokens.items(.from)[p.cursor],
+            p.tokens.items(.to)[p.cursor],
         ) catch unreachable,
         .k_true => p.push(
             .bool_expr,
@@ -250,8 +250,8 @@ fn pPrefixExpr(p: *Self) Index {
             }
             return p.push(
                 .symbol,
-                p.tokens.items(.from)[p.ts_cusor],
-                p.tokens.items(.to)[p.ts_cusor],
+                p.tokens.items(.from)[p.cursor],
+                p.tokens.items(.to)[p.cursor],
             ) catch unreachable;
         },
         else => 0,
@@ -300,6 +300,11 @@ const op_table = std.enums.directEnumArrayDefault(
         .@"|" = .{ .prec = 70, .tag = .pipe },
         .@"#" = .{ .prec = 70, .tag = .eff_elm },
         .@"!" = .{ .prec = 70, .tag = .err_elm },
+
+        .@"[" = .{ .prec = 70, .tag = .index },
+        .@"(" = .{ .prec = 70, .tag = .call },
+        .@"<" = .{ .prec = 70, .tag = .tcall },
+        .@"{" = .{ .prec = 70, .tag = .construction },
     },
 );
 
@@ -310,19 +315,60 @@ fn pPratt(p: *Self, min_prec: i8) Index {
     }
 
     while (true) {
-        // std.debug.print("-----------------loop on {}--------------\n", .{min_prec});
         const token_tag = p.peakToken();
         const info = op_table[@as(usize, @intCast(@intFromEnum(token_tag)))];
-        // std.debug.print(
-        //     "tok_tag: {s}\ninfo.prec: {}\n",
-        //     .{
-        //         @tagName(token_tag),
-        //         info.prec,
-        //     },
-        // );
+
+        switch (token_tag) {
+            // tcall
+            .@"<" => {
+                break;
+            },
+
+            // call
+            .@"(" => {
+                std.debug.print("-----------------loop on {}--------------\n", .{min_prec});
+                std.debug.print(
+                    "eat first: {s}\neat second: {s}\n",
+                    .{
+                        @tagName(p.nextToken()),
+                        @tagName(p.nextToken()),
+                    },
+                );
+
+                node = p.push(.call, node, 0) catch unreachable;
+                // break;
+            },
+
+            // construction
+            .@"{" => {
+                break;
+            },
+
+            // index
+            .@"[" => {
+                break;
+            },
+
+            // ?
+            .@"." => {
+                break;
+            },
+
+            // todo
+            .@"#" => {
+                break;
+            },
+            .@"!" => {
+                break;
+            },
+
+            else => {},
+        }
+
         if (info.prec < min_prec) {
             break;
         }
+
         _ = p.nextToken();
 
         const rhs = p.pPratt(info.prec + 1);
@@ -330,6 +376,32 @@ fn pPratt(p: *Self, min_prec: i8) Index {
     }
 
     return node;
+}
+
+fn pArgs(p: *Self) Index {
+    const first = p.pExpr();
+    if (first == 0) return 0;
+
+    p.prismaPush(0);
+    const result = p.prisma.items.len - 1;
+    p.prismaPush(first);
+    var count: usize = 1;
+
+    while (true) {
+        const next = p.nextToken();
+        const next_next = p.peakToken();
+
+        if (next == .@")" or next_next == .@")") {
+            break;
+        }
+
+        p.prismaPush(p.pExpr());
+        count += 1;
+    }
+
+    p.prisma.items[result] = count;
+
+    return result;
 }
 
 // fn pOrderedScope(p: *Self) Index {}
@@ -426,12 +498,14 @@ fn gef(p: Self, node: Index, field: anytype) FieldType(field) {
 }
 
 fn nextToken(p: *Self) Token.Tag {
-    p.ts_cusor += 1;
-    if (p.ts_cusor >= p.tokens.len) return Token.Tag.eof;
-    return p.tokens.items(.tag)[p.ts_cusor];
+    p.cursor += 1;
+    if (p.cursor >= p.tokens.len) return Token.Tag.eof;
+    return p.tokens.items(.tag)[p.cursor];
 }
+
+// not avaliable, bugged
 fn eatToken(p: *Self, tag: Token.Tag) bool {
-    if (p.ts_cusor >= p.tokens.len) return false;
+    if (p.cursor >= p.tokens.len) return false;
     // std.debug.print(
     //     "compare {s} with current cursor: {s}\n",
     //     .{
@@ -439,32 +513,33 @@ fn eatToken(p: *Self, tag: Token.Tag) bool {
     //         @tagName(p.tokens.items(.tag)[p.ts_cusor]),
     //     },
     // );
-    if (tag == p.tokens.items(.tag)[p.ts_cusor]) {
-        p.ts_cusor += 1;
+    if (tag == p.tokens.items(.tag)[p.cursor]) {
+        std.debug.print("cursor moved\n", .{});
+        p.cursor += 1;
         return true;
     }
 
     return false;
 }
 fn expectToken(p: *Self, tag: Token.Tag) bool {
-    if (p.ts_cusor >= p.tokens.len) return false;
+    if (p.cursor >= p.tokens.len) return false;
 
-    if (tag == p.tokens.items(.tag)[p.ts_cusor]) {
+    if (tag == p.tokens.items(.tag)[p.cursor]) {
         return true;
     }
 
     return false;
 }
 fn peakToken(p: *Self) Token.Tag {
-    if (p.ts_cusor + 1 >= p.tokens.len) return Token.Tag.eof;
+    if (p.cursor + 1 >= p.tokens.len) return Token.Tag.eof;
 
-    return p.tokens.items(.tag)[p.ts_cusor + 1];
+    return p.tokens.items(.tag)[p.cursor + 1];
 }
 
 fn expectNextToken(p: *Self, tag: Token.Tag) bool {
-    if (p.ts_cusor + 1 >= p.tokens.len) return false;
+    if (p.cursor + 1 >= p.tokens.len) return false;
 
-    if (tag == p.tokens.items(.tag)[p.ts_cusor + 1]) {
+    if (tag == p.tokens.items(.tag)[p.cursor + 1]) {
         return true;
     }
 

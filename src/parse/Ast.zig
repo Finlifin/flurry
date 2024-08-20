@@ -99,9 +99,14 @@ pub const Node = struct {
         annotation,
 
         // unary (postfix)
-
         // Node { .tag =  }
         construction,
+        // HashMap<&str, Box<usize>>.new()
+        call,
+        // HashMap<&str, Box<Alright>>
+        tcall,
+        // for tuple, array and slice
+        index,
 
         // types ?
         // error union,
@@ -120,10 +125,7 @@ pub const Node = struct {
 
         // others
         id,
-        // HashMap<&str, Box<usize>>.new()
-        call,
-        // HashMap<&str, Box<Alright>>
-        tcall,
+
         // { ...; false }
         block,
         cast,
