@@ -30,12 +30,15 @@ postfix_expr ->
     | expr .*
     | expr . id
     | expr .. expr
+    | expr ..
     | expr ..= expr
     | expr [ expr ]
     | expr ( param_list )
     | expr < param_list >
     | expr # effect_match?
+    | expr ## handler_expr
     | expr ! error_match?
+    | expr !! handler_expr
     | expr ? { expr }?
     | expr match match_list
     | expr handle error id { expr }
@@ -43,6 +46,8 @@ postfix_expr ->
 prefix_expr ->
     | not expr
     | -expr
+    | ..expr
+    | ..=expr
     | ^expr expr
     | #expr expr
     | !expr expr
@@ -60,7 +65,7 @@ prefix_expr ->
     | list
     | map
     | tuple
-    | bracket
+    | paren
     | pattern_expr
     | struct_def
     | enum_def
@@ -91,6 +96,8 @@ basic_expr ->
     | id
     | symbol
 
+    | range_full
+
     | undefined
     | null
     | unit
@@ -101,7 +108,7 @@ basic_expr ->
     | Any
 
 
-expr -> postfix_expr | prefix_expr | permitive_type
+expr -> postfix_expr | prefix_expr | basic_expr
 
 
 
@@ -117,6 +124,15 @@ control_stat ->
     | when { (expr => expr ,)+ }
     | break (expr)?; 
     | continue (expr)?;
+
+struct_field_def -> 
+    id : expr
+
+enum_field_def -> 
+    id
+    | id.{ enum_field_def_list }
+    | id(param_list)
+    | id { struct_field_def_list }
 
 statement ->
     decl_stat

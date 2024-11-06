@@ -14,11 +14,11 @@ prisma: std.ArrayList(Index),
 tokens: *const Soa(Token),
 cursor: usize = 0,
 
-err: void = undefined,
+err_info: ErrWithPayload = undefined,
 
 // pub fn parse(src: []const u8, ts: *const Soa(Token)) void {}
 
-pub fn pNamespace(p: *Self) Index {
+pub fn pNamespace(p: *Self) Err!Index {
     const t = p.nextToken();
 
     switch (t) {
@@ -31,7 +31,7 @@ pub fn pNamespace(p: *Self) Index {
     return 0;
 }
 
-pub fn pFn(p: *Self) Index {
+pub fn pFn(p: *Self) Err!Index {
     if (p.nextToken() != .id) {
         unreachable;
     }
@@ -86,7 +86,7 @@ pub fn srcContent(self: Self, id: Index) []const u8 {
     return self.src[from..to];
 }
 
-fn pDeclList(p: *Self) Index {
+fn pDeclList(p: *Self) Err!Index {
     _ = p;
     return 0;
 }
@@ -94,7 +94,7 @@ fn pDeclList(p: *Self) Index {
 fn expectConstruction(p: *Self) Index {
     const e = p.pConstruction();
     if (e == 0) {
-        p.panic(unreachable);
+        p.setErr(unreachable);
     }
     return e;
 }
@@ -103,19 +103,19 @@ pub fn pConstruction(_: *Self) Index {
     unreachable;
 }
 
-fn expectExpr(p: *Self) Index {
-    const e = p.pExpr();
+fn expectExpr(p: *Self) Err!Index {
+    const e = try p.pExpr();
     if (e == 0) {
-        p.panic(unreachable);
+        p.setErr(unreachable);
     }
     return e;
 }
 
-pub fn pExpr(p: *Self) Index {
-    return p.pPratt(0);
+pub fn pExpr(p: *Self) Err!Index {
+    return try p.pPratt(0);
 }
 
-fn pPrefixExpr(p: *Self) Index {
+fn pPrefixExpr(p: *Self) Err!Index {
     const t = p.nextToken();
 
     return switch (t) {
@@ -150,110 +150,7 @@ fn pPrefixExpr(p: *Self) Index {
             0,
             0,
         ) catch unreachable,
-        // bool not
-        .k_unreachable => p.push(
-            .unreachable_expr,
-            0,
-            0,
-        ) catch unreachable,
-        .k_void => p.push(
-            .type_void,
-            0,
-            0,
-        ) catch unreachable,
-        .k_noreturn => p.push(
-            .type_noreturn,
-            0,
-            0,
-        ) catch unreachable,
-        .k_unit => p.push(
-            .unit_expr,
-            0,
-            0,
-        ) catch unreachable,
-        .k_null => p.push(
-            .null_expr,
-            0,
-            0,
-        ) catch unreachable,
-        .k_any => p.push(
-            .any_expr,
-            0,
-            0,
-        ) catch unreachable,
-        .k_Any => p.push(
-            .type_Any,
-            0,
-            0,
-        ) catch unreachable,
 
-        .k_not => p.push(
-            .bool_not,
-            p.expectExpr(),
-            0,
-        ) catch unreachable,
-        .@"-" => p.push(
-            .negative,
-            p.expectExpr(),
-            0,
-        ) catch unreachable,
-        // reference type
-        .@"&" => {
-            var r: Index = undefined;
-            if (p.eatToken(.k_mut))
-                r = p.push(
-                    .type_ref,
-                    p.expectExpr(),
-                    0,
-                ) catch unreachable
-            else
-                r = p.push(
-                    .type_ref,
-                    p.expectExpr(),
-                    0,
-                ) catch unreachable;
-            return r;
-        },
-        .@"*" => 0,
-        .@"^" => 0,
-        .@"#" => 0,
-        .@"!" => 0,
-        .@"[" => 0,
-        .@"{" => 0,
-        .@"(" => 0,
-        .@"@" => 0,
-        .k_match => 0,
-        .k_if => 0,
-        .k_when => 0,
-        .k_inline => 0,
-        .k_opaque => 0,
-        .k_struct => 0,
-        .k_enum => 0,
-        .k_tuple => 0,
-        .k_comptime => 0,
-        .k_return => 0,
-        .k_handle => 0,
-        .k_trait => 0,
-        .k_fn => 0,
-        .k_error => 0,
-        .@"\\" => 0,
-        .@"." => {
-            _ = p.eatToken(.@".");
-
-            // arbitary struct construction
-            if (p.eatToken(.@"{")) {
-                return p.push(
-                    .arbitrary_construction,
-                    p.expectConstruction(),
-                    0,
-                ) catch unreachable;
-            }
-            return p.push(
-                .symbol,
-                p.tokens.items(.from)[p.cursor],
-                p.tokens.items(.to)[p.cursor],
-            ) catch unreachable;
-        },
         else => 0,
     };
 }
@@ -281,35 +178,21 @@ const op_table = std.enums.directEnumArrayDefault(
         .@"<=" = .{ .prec = 30, .tag = .bool_lt_eq },
         .@" < " = .{ .prec = 30, .tag = .bool_lt },
 
-        .@".." = .{ .prec = 40, .tag = .range },
-        .@"..=" = .{ .prec = 40, .tag = .range_inclusive },
+        .@".." = .{ .prec = 40, .tag = .range_from_to },
+        .@"..=" = .{ .prec = 40, .tag = .range_from_to_inclusive },
 
         .@" + " = .{ .prec = 50, .tag = .add },
         .@" - " = .{ .prec = 50, .tag = .minus },
 
-        .@" / " = .{ .prec = 50, .tag = .add },
-        .@" * " = .{ .prec = 50, .tag = .add },
-        .@" % " = .{ .prec = 50, .tag = .add },
-
+        .@" / " = .{ .prec = 60, .tag = .div },
+        .@" * " = .{ .prec = 60, .tag = .mul },
+        .@" % " = .{ .prec = 60, .tag = .mod },
         .@"++" = .{ .prec = 60, .tag = .add_add },
-        .@"<:" = .{ .prec = 60, .tag = .is_subtype },
-        .@":>" = .{ .prec = 60, .tag = .is_supertype },
-
-        .@"." = .{ .prec = 70, .tag = .select },
-        .@"'" = .{ .prec = 70, .tag = .lift },
-        .@"|" = .{ .prec = 70, .tag = .pipe },
-        .@"#" = .{ .prec = 70, .tag = .eff_elm },
-        .@"!" = .{ .prec = 70, .tag = .err_elm },
-
-        .@"[" = .{ .prec = 70, .tag = .index },
-        .@"(" = .{ .prec = 70, .tag = .call },
-        .@"<" = .{ .prec = 70, .tag = .tcall },
-        .@"{" = .{ .prec = 70, .tag = .construction },
     },
 );
 
-fn pPratt(p: *Self, min_prec: i8) Index {
-    var node = p.pPrefixExpr();
+fn pPratt(p: *Self, min_prec: i8) !Index {
+    var node = try p.pPrefixExpr();
     if (node == 0) {
         return 0;
     }
@@ -371,14 +254,14 @@ fn pPratt(p: *Self, min_prec: i8) Index {
 
         _ = p.nextToken();
 
-        const rhs = p.pPratt(info.prec + 1);
-        node = p.push(info.tag, node, rhs) catch unreachable;
+        const rhs = try p.pPratt(info.prec + 1);
+        node = try p.push(info.tag, node, rhs);
     }
 
     return node;
 }
 
-fn pArgs(p: *Self) Index {
+fn pArgs(p: *Self) !Index {
     const first = p.pExpr();
     if (first == 0) return 0;
 
@@ -479,10 +362,13 @@ pub fn directDump(self: Self) void {
     }
 }
 
-fn push(p: *Self, tag: Node.Tag, lhs: Index, rhs: Index) !Index {
+fn push(p: *Self, tag: Node.Tag, lhs: Index, rhs: Index) Err!Index {
     if (p.nodes.len >= p.nodes_capacity) {
         const new_capacity = @as(usize, @intFromFloat(@as(f64, @floatFromInt(p.nodes_capacity)) * 1.5));
-        try p.nodes.setCapacity(p.gpa, new_capacity);
+        p.nodes.setCapacity(p.gpa, new_capacity) catch {
+            p.setErr(ErrWithPayload{ .AllocationError = error.OutOfMemory });
+            return Err.Fail;
+        };
         p.nodes_capacity = new_capacity;
     }
     p.nodes.appendAssumeCapacity(.{ .tag = tag, .lhs = lhs, .rhs = rhs });
@@ -559,7 +445,9 @@ pub fn dumpTokens(p: Self) void {
     }
 }
 
-fn panic(_: Self, _: Ast.Err) void {}
+fn setErr(p: *Self, e: ErrWithPayload) void {
+    p.err_info = e;
+}
 
 fn FieldType(field: anytype) type {
     return switch (field) {
@@ -577,3 +465,13 @@ const std = @import("std");
 const Soa = std.MultiArrayList;
 const Alc = std.mem.Allocator;
 const Token = @import("../lex/lex.zig").Token;
+
+pub const ErrWithPayload = union(enum) {
+    UnexpectedToken: struct { expected: Token.Tag, got: Token.Tag },
+    UnImplemented: struct { token: Token.Tag },
+    AllocationError: Alc.Error,
+};
+
+const Err = error{
+    Fail,
+};

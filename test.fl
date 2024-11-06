@@ -1,3 +1,1 @@
-fn `and the a hero comes along`(name: that) -> T where T {
-    some
-}
+a + b * c < 234 and sd or 234 > s

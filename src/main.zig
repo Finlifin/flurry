@@ -15,7 +15,7 @@ pub fn main() !void {
     const tokens = Lex.lex(gpa.allocator(), src);
 
     var p = Parse.init(gpa.allocator(), gpa.allocator(), src, &tokens);
-    const expr = p.pExpr();
+    const expr = try p.pExpr();
 
     p.dumpTokens();
     // p.directDump();
