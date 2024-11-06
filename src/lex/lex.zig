@@ -24,28 +24,9 @@ pub const Lexer = struct {
                     self.cursor += 1;
                     return token(.@"@", old_cursor, self.cursor);
                 },
-
                 '#' => {
                     self.cursor += 1;
                     return token(.@"#", old_cursor, self.cursor);
-                },
-                '%' => {
-                    if (self.seperated(self.cursor)) {
-                        self.cursor += 2;
-                        return token(.@" % ", old_cursor, self.cursor);
-                    } else {
-                        self.cursor += 1;
-                        return token(.@"%", old_cursor, self.cursor);
-                    }
-                },
-                '/' => {
-                    if (self.seperated(self.cursor)) {
-                        self.cursor += 2;
-                        return token(.@" / ", old_cursor, self.cursor);
-                    } else {
-                        self.cursor += 1;
-                        return token(.@"/", old_cursor, self.cursor);
-                    }
                 },
                 '|' => {
                     self.cursor += 1;
@@ -58,10 +39,6 @@ pub const Lexer = struct {
                 '&' => {
                     self.cursor += 1;
                     return token(.@"&", old_cursor, self.cursor);
-                },
-                '*' => {
-                    self.cursor += 1;
-                    return token(.@"*", old_cursor, self.cursor);
                 },
                 '(' => {
                     self.cursor += 1;
@@ -79,26 +56,6 @@ pub const Lexer = struct {
                     self.cursor += 1;
                     return token(.@"]", old_cursor, self.cursor);
                 },
-                '{' => {
-                    self.cursor += 1;
-                    return token(.@"{", old_cursor, self.cursor);
-                },
-                '}' => {
-                    self.cursor += 1;
-                    return token(.@"}", old_cursor, self.cursor);
-                },
-                ':' => {
-                    if (self.eatChar('-')) {
-                        self.cursor += 1;
-                        return token(.@":-", old_cursor, self.cursor);
-                    } else if (self.eatChar('>')) {
-                        self.cursor += 1;
-                        return token(.@":>", old_cursor, self.cursor);
-                    } else {
-                        self.cursor += 1;
-                        return token(.@":", old_cursor, self.cursor);
-                    }
-                },
                 ';' => {
                     self.cursor += 1;
                     return token(.@";", old_cursor, self.cursor);
@@ -107,16 +64,19 @@ pub const Lexer = struct {
                     self.cursor += 1;
                     return token(.@",", old_cursor, self.cursor);
                 },
-
-                '~' => {
-                    self.cursor += 1;
-                    return token(.@"~", old_cursor, self.cursor);
-                },
                 '?' => {
                     self.cursor += 1;
                     return token(.@"?", old_cursor, self.cursor);
                 },
-
+                '~' => {
+                    if (self.eatChar('>')) {
+                        self.cursor += 1;
+                        return token(.@"~>", old_cursor, self.cursor);
+                    } else {
+                        self.cursor += 1;
+                        return token(.@"~", old_cursor, self.cursor);
+                    }
+                },
                 '>' => {
                     if (self.seperated(self.cursor)) {
                         self.cursor += 2;
@@ -140,9 +100,6 @@ pub const Lexer = struct {
                         if (self.eatChar('=')) {
                             self.cursor += 1;
                             return token(.@"<=", old_cursor, self.cursor);
-                        } else if (self.eatChar(':')) {
-                            self.cursor += 1;
-                            return token(.@"<:", old_cursor, self.cursor);
                         } else {
                             self.cursor += 1;
                             return token(.@"<", old_cursor, self.cursor);
@@ -178,6 +135,16 @@ pub const Lexer = struct {
                         } else if (self.eatChar('>')) {
                             self.cursor += 1;
                             return token(.@"->", old_cursor, self.cursor);
+                        } else if (self.eatChar('-')) {
+                            // comment
+                            while (true) : (self.cursor += 1) {
+                                if (self.cursor >= self.src.len) return token(.comment, old_cursor, self.cursor - 1);
+                                const c_ = b[self.cursor];
+                                if (c_ == '\n') {
+                                    self.cursor += 1;
+                                    return token(.comment, old_cursor, self.cursor);
+                                }
+                            }
                         } else {
                             self.cursor += 1;
                             return token(.@"-", old_cursor, self.cursor);
@@ -224,7 +191,72 @@ pub const Lexer = struct {
                         return token(.@".", old_cursor, self.cursor);
                     }
                 },
-
+                '%' => {
+                    if (self.seperated(self.cursor)) {
+                        self.cursor += 2;
+                        return token(.@" % ", old_cursor, self.cursor);
+                    } else {
+                        if (self.eatChar('=')) {
+                            self.cursor += 1;
+                            return token(.@"%=", old_cursor, self.cursor);
+                        } else {
+                            self.cursor += 1;
+                            return token(.@"%", old_cursor, self.cursor);
+                        }
+                    }
+                },
+                '{' => {
+                    if (self.eatChar('-')) {
+                        // comment
+                        while (true) : (self.cursor += 1) {
+                            if (self.cursor >= self.src.len) return token(.comment, old_cursor, self.cursor - 1);
+                            const c_ = b[self.cursor];
+                            if (c_ == '-') {
+                                if (self.eatChar('}')) {
+                                    self.cursor += 1;
+                                    return token(.comment, old_cursor, self.cursor);
+                                }
+                            }
+                        }
+                    } else {
+                        self.cursor += 1;
+                        return token(.@"{", old_cursor, self.cursor);
+                    }
+                },
+                '}' => {
+                    self.cursor += 1;
+                    return token(.@"}", old_cursor, self.cursor);
+                },
+                ':' => {
+                    if (self.eatChar('-')) {
+                        self.cursor += 1;
+                        return token(.@":-", old_cursor, self.cursor);
+                    } else if (self.eatChar(':')) {
+                        self.cursor += 1;
+                        return token(.@"::", old_cursor, self.cursor);
+                    } else {
+                        self.cursor += 1;
+                        return token(.@":", old_cursor, self.cursor);
+                    }
+                },
+                '*' => {
+                    if (self.seperated(self.cursor)) {
+                        self.cursor += 2;
+                        return token(.@" * ", old_cursor, self.cursor);
+                    } else {
+                        self.cursor += 1;
+                        return token(.@"*", old_cursor, self.cursor);
+                    }
+                },
+                '/' => {
+                    if (self.seperated(self.cursor)) {
+                        self.cursor += 2;
+                        return token(.@" / ", old_cursor, self.cursor);
+                    } else {
+                        self.cursor += 1;
+                        return token(.@"/", old_cursor, self.cursor);
+                    }
+                },
                 'a'...'z', 'A'...'Z' => return self.recognizeId(),
 
                 '`' => return self.recognizeArbitaryId(),
@@ -279,11 +311,13 @@ pub const Lexer = struct {
     }
     fn recognizeMultiLineStr() void {}
     fn recognizeComment() void {}
+
+    // BUG: `some`，当`为最后一个字符时，len不包括其在内
     fn recognizeId(self: *Self) Token {
         const b = self.src;
         const old_cursor = self.cursor;
         while (true) : (self.cursor += 1) {
-            if (self.cursor + 1 >= self.src.len)
+            if (self.cursor >= self.src.len)
                 if (Token.keywords.get(b[old_cursor..self.cursor])) |kw|
                     return token(kw, old_cursor, self.cursor)
                 else {
@@ -387,7 +421,6 @@ pub const Token = struct {
         @" + ",
         @"<",
         @"<=",
-        @"<:",
         @" < ",
         @">",
         @">=",
@@ -398,12 +431,30 @@ pub const Token = struct {
         @"->",
         @"-=",
         @" - ",
+        @".",
+        @"..",
+        @"..=",
+        @"...",
+        @":",
+        @"::",
+        @":-",
         @"*",
+        @"*=",
         @" * ",
+        @"/",
+        @"/=",
+        @" / ",
+        @"%",
+        @"%=",
+        @" % ",
+        @"=",
+        @"=>",
+        @"==",
+        @"==>",
+        @"~",
+        @"~>",
         @"|",
         @"?",
-        @"/",
-        @" / ",
         @"\\",
         @"#",
         @"&",
@@ -414,37 +465,25 @@ pub const Token = struct {
         @"{",
         @"}",
         @",",
-        @".",
-        @"..",
-        @"..=",
-        @"...",
-        @":",
-        @":>",
-        @":-",
         @"'",
         @";",
-        @"~",
         @"^",
         @"$",
         @"@",
         @"_",
-        @"%",
-        @" % ",
-        @"=",
-        @"=>",
-        @"==",
 
         // permitive literals
         str,
-        str_multi_line,
         int,
         real,
 
         // keywords
-        k_Any,
         k_and,
         k_any,
+        k_Any,
         k_as,
+        k_assert,
+        k_asume,
         k_async,
         k_await,
         k_bool,
@@ -452,6 +491,7 @@ pub const Token = struct {
         k_case,
         k_comptime,
         k_const,
+        k_decreases,
         k_define,
         k_derive,
         k_do,
@@ -461,15 +501,24 @@ pub const Token = struct {
         k_ensures,
         k_enum,
         k_error,
+        k_exists,
         k_extern,
         k_false,
         k_fn,
+        k_Fn,
+        k_FnMut,
+        k_FnOnce,
         k_for,
+        k_forall,
+        k_ghost,
         k_handle,
         k_if,
         k_impl,
         k_in,
         k_inline,
+        k_invariant,
+        k_is,
+        k_lemma,
         k_let,
         k_lifting,
         k_match,
@@ -483,15 +532,19 @@ pub const Token = struct {
         k_not,
         k_null,
         k_opaque,
+        k_opens,
         k_or,
         k_perform,
+        k_predicate,
         k_ptr,
         k_pub,
         k_pure,
         k_ref,
+        k_refines,
         k_requires,
         k_resume,
         k_return,
+        k_returns,
         k_self,
         k_Self,
         k_static,
@@ -519,10 +572,12 @@ pub const Token = struct {
     };
 
     const keywords = std.StaticStringMap(Tag).initComptime(.{
-        .{ "Any", .k_Any },
         .{ "and", .k_and },
         .{ "any", .k_any },
+        .{ "Any", .k_Any },
         .{ "as", .k_as },
+        .{ "assert", .k_assert },
+        .{ "asume", .k_asume },
         .{ "async", .k_async },
         .{ "await", .k_await },
         .{ "bool", .k_bool },
@@ -530,41 +585,60 @@ pub const Token = struct {
         .{ "case", .k_case },
         .{ "comptime", .k_comptime },
         .{ "const", .k_const },
+        .{ "decreases", .k_decreases },
         .{ "define", .k_define },
         .{ "derive", .k_derive },
         .{ "do", .k_do },
+        .{ "dyn", .k_dyn },
         .{ "effect", .k_effect },
         .{ "else", .k_else },
         .{ "ensures", .k_ensures },
         .{ "enum", .k_enum },
         .{ "error", .k_error },
+        .{ "exists", .k_exists },
         .{ "extern", .k_extern },
         .{ "false", .k_false },
         .{ "fn", .k_fn },
+        .{ "Fn", .k_Fn },
+        .{ "FnMut", .k_FnMut },
+        .{ "FnOnce", .k_FnOnce },
         .{ "for", .k_for },
+        .{ "forall", .k_forall },
+        .{ "ghost", .k_ghost },
         .{ "handle", .k_handle },
         .{ "if", .k_if },
         .{ "impl", .k_impl },
         .{ "in", .k_in },
         .{ "inline", .k_inline },
+        .{ "invariant", .k_invariant },
+        .{ "is", .k_is },
+        .{ "lemma", .k_lemma },
         .{ "let", .k_let },
         .{ "lifting", .k_lifting },
         .{ "match", .k_match },
         .{ "move", .k_move },
         .{ "mut", .k_mut },
+        .{ "mutdyn", .k_mutdyn },
+        .{ "mutptr", .k_mutptr },
+        .{ "mutref", .k_mutref },
         .{ "newtype", .k_newtype },
         .{ "noreturn", .k_noreturn },
         .{ "not", .k_not },
         .{ "null", .k_null },
         .{ "opaque", .k_opaque },
+        .{ "opens", .k_opens },
         .{ "or", .k_or },
         .{ "perform", .k_perform },
+        .{ "predicate", .k_predicate },
+        .{ "ptr", .k_ptr },
         .{ "pub", .k_pub },
         .{ "pure", .k_pure },
         .{ "ref", .k_ref },
+        .{ "refines", .k_refines },
         .{ "requires", .k_requires },
         .{ "resume", .k_resume },
         .{ "return", .k_return },
+        .{ "returns", .k_returns },
         .{ "self", .k_self },
         .{ "Self", .k_Self },
         .{ "static", .k_static },
@@ -580,13 +654,8 @@ pub const Token = struct {
         .{ "unreachable", .k_unreachable },
         .{ "unsafe", .k_unsafe },
         .{ "void", .k_void },
-        .{ "while", .k_while },
         .{ "when", .k_when },
-        .{ "mutref", .k_mutref },
-        .{ "mutptr", .k_mutptr },
-        .{ "mutdyn", .k_mutdyn },
-        .{ "ptr", .k_ptr },
-        .{ "dyn", .k_dyn },
+        .{ "while", .k_while },
     });
 };
 

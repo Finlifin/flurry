@@ -1,0 +1,194 @@
+-- just for human reading
+
+
+postfix_expr -> 
+    expr + expr
+    | expr - expr
+    | expr * expr
+    | expr / expr
+    | expr ++ expr
+    | expr % expr
+    | expr == expr
+    | expr != expr
+    | expr < expr ((< expr) | (<= expr))?
+    | expr <= expr ((< expr) | (<= expr))?
+    | expr > expr ((> expr) | (>= expr))?
+    | expr >= expr ((> expr) | (>= expr))?
+    | expr and expr
+    | expr or expr
+    | expr ==> expr
+    | expr : expr
+    | expr :: id : expr
+    | expr :- expr
+    | expr | expr
+    | expr ' type
+    | expr ' init(param_list)
+    | expr ' as(expr)
+    | expr ' dyn(expr)
+    | expr ' ref
+    | expr ' id
+    | expr .*
+    | expr . id
+    | expr .. expr
+    | expr ..= expr
+    | expr [ expr ]
+    | expr ( param_list )
+    | expr < param_list >
+    | expr # effect_match?
+    | expr ! error_match?
+    | expr ? { expr }?
+    | expr match match_list
+    | expr handle error id { expr }
+
+prefix_expr ->
+    | not expr
+    | -expr
+    | ^expr expr
+    | #expr expr
+    | !expr expr
+    | *expr
+    | ?expr
+    | dyn expr
+    | refined_type 
+    | invariant
+    | builtin_call
+    | lambda
+    | fn_type
+    | Fn_trait
+    | FnOnce_trait
+    | FnMut_trait
+    | list
+    | map
+    | tuple
+    | bracket
+    | pattern_expr
+    | struct_def
+    | enum_def
+    | union_def
+    | opaque_def
+    | impl_def
+    | derive_def
+    | handler_def
+    | fn_def
+    | effect_def
+    | do_block
+    | comptime_block
+    | when_expr
+    | if_expr
+    | if_is_expr
+    | if_is_pattern_expr
+    | return_expr
+    | symbol_init
+    | symbol_call
+    | arbitary_init
+
+basic_expr -> 
+    | int
+    | real
+    | str
+    | char
+    | bool
+    | id
+    | symbol
+
+    | undefined
+    | null
+    | unit
+    | unreachable
+
+    | noreturn
+    | void
+    | Any
+
+
+expr -> postfix_expr | prefix_expr | permitive_type
+
+
+
+
+
+decl_stat -> 
+    let (pattern : expr = expr ,)+;
+    | const (pattern : expr = expr ,)+;
+    | newtype (pattern : expr = expr ,)+;
+
+control_stat -> 
+    if expr { expr } (else { expr })?
+    | when { (expr => expr ,)+ }
+    | break (expr)?; 
+    | continue (expr)?;
+
+statement ->
+    decl_stat
+    | control_stat
+    | expr;
+    | nor_effect_def
+    | nor_struct_def
+    | nor_enum_def
+    | nor_union_def
+    | nor_opaque_def
+    | impl_def
+
+
+nor_fn_def -> 
+    fn id fn_def_body
+fn_def ->
+    fn fn_def_body
+
+nor_effect_def -> 
+    effect id effect_def_main
+effect_def ->
+    effect effect_def_main
+
+nor_struct_def -> 
+    struct id struct_def_main
+struct_def ->
+    struct struct_def_main
+
+nor_enum_def -> 
+    enum id enum_def_main
+enum_def ->
+    enum enum_def_main
+
+nor_union_def ->
+    union id union_def_main
+union_def ->
+    union union_def_main
+
+nor_opaque_def ->
+    opaque id opaque_def_main
+opaque_def ->
+    opaque opaque_def_main
+
+
+
+basic_pattern ->
+    int
+    | real
+    | str
+    | char
+    | bool
+    | id
+    | symbol
+    | null
+    | ..
+    | _
+
+prefix_pattern -> 
+    case expr { structural_pattern_list }
+    | symbol { structural_pattern_list }
+    | .{ structural_pattern_list } 
+    | symbol (pattern_list)
+    | (pattern_list)
+    | [pattern_list]
+    | <pattern_list>
+    | &[param_list]
+    | ..pattern
+
+postfix_pattern ->
+    pattern or pattern
+    | pattern and if expr
+    | pattern and if expr is pattern
+    | pattern ?
+    | pattern .. pattern?
+    | pattern . *
