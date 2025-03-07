@@ -45,6 +45,7 @@ const op_table = std.enums.directEnumArrayDefault(
         .@" < " = .{ .prec = 40, .tag = .bool_lt },
         .@":" = .{ .prec = 40, .tag = .type_with },
         .@":-" = .{ .prec = 40, .tag = .trait_bound },
+        .k_matches = .{ .prec = 40, .tag = .bool_matches },
 
         .@" + " = .{ .prec = 60, .tag = .add },
         .@" - " = .{ .prec = 60, .tag = .sub },
@@ -57,17 +58,20 @@ const op_table = std.enums.directEnumArrayDefault(
         .@"|" = .{ .prec = 80, .tag = .pipe },
         .@"|>" = .{ .prec = 80, .tag = .pipe_prepend },
 
-        // .@"(" = .{ .prec = 90, .tag = .call },
-        // .@"[" = .{ .prec = 90, .tag = .index_call },
-        // .@"{" = .{ .prec = 90, .tag = .object_call },
-        // .@"<" = .{ .prec = 90, .tag = .diamond_call },
-        // .@"#" = .{ .prec = 90, .tag = .effect_elimination },
-        // .@"!" = .{ .prec = 90, .tag = .error_elimination },
-        // .@"?" = .{ .prec = 90, .tag = .option_elimination },
-        // .k_match = .{ .prec = 90, .tag = .match },
+        .@"(" = .{ .prec = 90, .tag = .call },
+        .@"[" = .{ .prec = 90, .tag = .index_call },
+        .@"{" = .{ .prec = 90, .tag = .record_call },
+        .@"<" = .{ .prec = 90, .tag = .diamond_call },
+        .@"#" = .{ .prec = 90, .tag = .effect_elimination },
+        .@"!" = .{ .prec = 90, .tag = .error_elimination },
+        .@"?" = .{ .prec = 90, .tag = .option_elimination },
+        .k_match = .{ .prec = 90, .tag = .post_match },
 
         .@"." = .{ .prec = 100, .tag = .select },
         .@"'" = .{ .prec = 100, .tag = .image },
+
+        // literal extension
+        .id = .{ .prec = 110, .tag = .id },
     },
 );
 
@@ -84,53 +88,65 @@ fn tryPratt(self: *Parser, min_prec: i8, opt: ExprOption) Err!u64 {
         if (op_info.tag == .invalid or op_info.prec < min_prec)
             break;
 
-        // switch (token.tag) {
-        //     .@"(" => {
-        //         const rules = .{
-        //             basic.rule("property", basic.tryProperty),
-        //             basic.rule("expr", Parser.tryExpr),
-        //         };
+        const post = try tryPostfixExpr(self, token.tag, left, opt);
+        if (post != 0) {
+            left = post;
+            continue;
+        }
 
-        //         const nodes = try basic.pMulti(self, rules, .@"(");
-        //         defer nodes.deinit();
-        //         left = try self.pushNode(.{ Tag.call, left, nodes.items });
+        self.eatTokens(1);
+        const right = try tryPratt(self, op_info.prec + 1, opt);
+        if (right == 0)
+            return self.invalidExpr("expect an expression after a binary operator");
 
-        //         continue;
-        //     },
-        //     .@"<" => {
-        //         const rules = .{
-        //             basic.rule("property", basic.tryProperty),
-        //             basic.rule("expr", Parser.tryExpr),
-        //         };
+        left = try self.pushNode(.{ op_info.tag, left, right });
+    }
 
-        //         const nodes = try basic.pMulti(self, rules, .@"<");
-        //         defer nodes.deinit();
-        //         left = try self.pushNode(.{ Tag.diamond_call, left, nodes.items });
+    return left;
+}
 
-        //         continue;
-        //     },
-        //     .@"{" => {
-        //         if (opt.no_object_call) {
-        //             break;
-        //         }
-        //         const rules = .{
-        //             basic.rule("property", basic.tryProperty),
-        //             basic.rule("expr", Parser.tryExpr),
-        //         };
+fn tryPostfixExpr(self: *Parser, tag: w.Token.Tag, left: u64, opt: ExprOption) Err!u64 {
+    var result: u64 = 0;
+    switch (tag) {
+        .@"(" => {
+            const rules = .{
+                common.rule("property", common.tryProperty),
+                common.rule("expr", Parser.tryExpr),
+            };
 
-        //         const nodes = try basic.pMulti(self, rules, .@"{");
-        //         defer nodes.deinit();
-        //         left = try self.pushNode(.{ Tag.object_call, left, nodes.items });
+            const nodes = try common.pMulti(self, rules, .@"(");
+            defer nodes.deinit();
+            result = try self.pushNode(.{ Tag.call, left, nodes.items });
+        },
+        .@"<" => {
+            const rules = .{
+                common.rule("property", common.tryProperty),
+                common.rule("expr", Parser.tryExpr),
+            };
 
-        //         continue;
-        //     },
-        //     .@"[" => {
-        //         self.eatTokens(1);
-        //         const index_expr = try self.tryExpr();
-        //         try self.expectNextToken(.@"]", "expect a `]` to close index call");
-        //         left = try self.pushNode(.{ Tag.index_call, left, index_expr });
-        //         continue;
-        //     },
+            const nodes = try common.pMulti(self, rules, .@"<");
+            defer nodes.deinit();
+            result = try self.pushNode(.{ Tag.diamond_call, left, nodes.items });
+        },
+
+        .@"{" => {
+            if (opt.no_record_call) {
+                return 0;
+            }
+            const rules = .{
+                common.rule("property", common.tryProperty),
+            };
+
+            const nodes = try common.pMulti(self, rules, .@"{");
+            defer nodes.deinit();
+            result = try self.pushNode(.{ Tag.record_call, left, nodes.items });
+        },
+        .@"[" => {
+            self.eatTokens(1);
+            const index_expr = try self.tryExpr();
+            try self.expectNextToken(.@"]", "expect a `]` to close index call");
+            result = try self.pushNode(.{ Tag.index_call, left, index_expr });
+        },
         //     .@"#" => {
         //         self.eatTokens(1);
         //         switch (self.peekToken().tag) {
@@ -223,17 +239,10 @@ fn tryPratt(self: *Parser, min_prec: i8, opt: ExprOption) Err!u64 {
         //         left = try self.pushNode(.{ Tag.image, left, id });
         //         continue;
         //     },
-        //     else => {},
-        // }
-        self.eatTokens(1);
-        const right = try tryPratt(self, op_info.prec + 1, opt);
-        if (right == 0)
-            return self.invalidExpr("expect an expression after a binary operator");
-
-        left = try self.pushNode(.{ op_info.tag, left, right });
+        else => {},
     }
 
-    return left;
+    return result;
 }
 
 pub fn tryPrefixExpr(

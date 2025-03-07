@@ -1,4 +1,1 @@
-
-(add_add 
-    (str "say you, ") 
-    (str "say me"))
+(record_call (id Node)(len 3) (property (id next) (null ))(property (id prev) (null ))(property (id data) (select (id data) (id wtf))))

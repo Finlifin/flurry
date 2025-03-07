@@ -504,7 +504,7 @@ pub const Ast = struct {
             .bool_gt_eq,
             .bool_lt,
             .bool_lt_eq,
-            .diamond_call,
+            .index_call,
             .range_from_to,
             .range_from_to_inclusive,
             .use_statement,
@@ -545,20 +545,20 @@ pub const Ast = struct {
             //     }
             // },
             // // one left item and multiple children
-            // .call,
-            // .object_call,
-            // .diamond_call,
-            // .pattern_call,
-            // .object_pattern_call,
-            // .select_multi,
-            // => {
-            //     try self.dump(self.getNode(node_index + 1), writer);
-            //     const len = self.getNode(node_index + 2);
-            //     try writer.print("(len {d}) ", .{len});
-            //     for (0..len) |i| {
-            //         try self.dump(self.getNode(node_index + 3 + i), writer);
-            //     }
-            // },
+            .call,
+            .record_call,
+            .diamond_call,
+            .pattern_call,
+            .pattern_record_call,
+            .path_select_multi,
+            => {
+                try self.dump(self.getNode(node_index + 1), writer);
+                const len = self.getNode(node_index + 2);
+                try writer.print("(len {d}) ", .{len});
+                for (0..len) |i| {
+                    try self.dump(self.getNode(node_index + 3 + i), writer);
+                }
+            },
             // // two left items and multiple children
             // .derivation,
             // => {
@@ -672,29 +672,29 @@ pub const Ast = struct {
         return self.nodes.items[node_index + 1 .. node_index + 1 + len];
     }
 
-    // pub fn report(
-    //     self: *Ast,
-    //     node: u64,
-    //     level: errors.Kind,
-    //     code: errors.GlobalErr,
-    //     label_info: []const u8,
-    //     extra_lines: u64,
-    // ) !void {
-    //     const span = self.getSpan(node).?;
-    //     try self.vfs.reportB(
-    //         vfs.BigSpan{ .from = vfs.Span{
-    //             .src = self.src_id,
-    //             .token = self.getToken(span.from),
-    //         }, .to = vfs.Span{
-    //             .src = self.src_id,
-    //             .token = self.getToken(span.to),
-    //         } },
-    //         level,
-    //         code,
-    //         label_info,
-    //         extra_lines,
-    //     );
-    // }
+    pub fn report(
+        self: *Ast,
+        node: u64,
+        kind: errors.Kind,
+        code: errors.Err,
+        label_info: []const u8,
+        extra_lines: u64,
+    ) !void {
+        // Find the token span for the given node
+        const span = self.getNode2Span(node) orelse return error.NodeNotFound;
+
+        if (self.file.tokens) |tokens| {
+            const from_token = tokens.items[span.from];
+            const to_token = tokens.items[span.to];
+
+            // If from and to are the same, use simpler report
+            if (span.from == span.to) {
+                try self.file.report(self.allocator, from_token, kind, code, label_info, extra_lines);
+            } else {
+                try self.file.reportSpan(self.allocator, from_token, to_token, kind, code, label_info, extra_lines);
+            }
+        }
+    }
 
     // binary search
     pub fn getNode2Span(self: *Ast, node: u64) ?Node2Span {
@@ -719,4 +719,9 @@ pub const Ast = struct {
         self.spans.deinit();
         self.nodes.deinit();
     }
+};
+
+const Line = struct {
+    from: u64,
+    to: u64,
 };

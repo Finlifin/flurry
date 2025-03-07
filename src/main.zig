@@ -20,7 +20,7 @@ pub fn main() !void {
     std.debug.print("DEBUG: test.fl path: {s}\n", .{test_file_path});
 
     try test_file.lexModule(gpa.allocator());
-    try test_file.dumpTokens(gpa.allocator());
+    // try test_file.dumpTokens(gpa.allocator());
     try test_file.parseModule(gpa.allocator());
     try test_file.dumpAst();
 }

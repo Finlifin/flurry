@@ -48,18 +48,85 @@ pub fn trySymbol(self: *Parser) Err!u64 {
     self.eatTokens(1);
 
     const result = try self.pushNode(.{ Tag.symbol, try tryId(self) });
-    self.eatTokens(1);
     return result;
 }
 
 pub fn tryProperty(self: *Parser) Err!u64 {
     try self.enter();
     defer self.exit();
+    if (!self.peek(&.{ .@".", .id, .@"=" })) return 0;
 
-    if (!self.peek(&.{ .@".", .id })) return 0;
-    self.eatTokens(2);
-
-    const result = try self.pushNode(.{ Tag.property, try self.tryExpr() });
     self.eatTokens(1);
+    const id = try tryId(self);
+    self.eatTokens(1);
+    const result = try self.pushNode(.{ Tag.property, id, try self.tryExpr() });
+
     return result;
+}
+
+const Rule = struct {
+    name: []const u8,
+    p: fn (self: *Parser) Err!u64,
+    delimiter: w.Token.Tag = .@",",
+};
+
+pub fn rule(name: []const u8, p: fn (self: *Parser) Err!u64) Rule {
+    return Rule{ .name = name, .p = p };
+}
+
+pub fn ruleWithDelimiter(name: []const u8, p: fn (self: *Parser) Err!u64, delimiter: w.Token.Tag) Rule {
+    return Rule{ .name = name, .p = p, .delimiter = delimiter };
+}
+
+pub fn pMulti(
+    self: *Parser,
+    comptime rules: anytype,
+    comptime br: ?w.Token.Tag,
+) Err!std.ArrayList(u64) {
+    if (rules.len == 0) @compileError("provide at least one rule");
+    const close_br: ?w.Token.Tag = if (br) |bracket| switch (bracket) {
+        .@"{" => .@"}",
+        .@"[" => .@"]",
+        .@"(" => .@")",
+        .@"<" => .@">",
+        .@"|" => .@"|",
+        .eof => .eof,
+        else => @compileError("unsupported bracket"),
+    } else null;
+    if (br) |b|
+        try self.expectNextToken(b, "expected an opening bracket");
+
+    var nodes = std.ArrayList(u64).init(self.tmp_alc.allocator());
+    if (close_br) |close|
+        if (self.eat(close)) return nodes;
+
+    while (true) {
+        var node: u64 = 0;
+        var delimiter: w.Token.Tag = .@",";
+
+        inline for (rules) |r| {
+            if (@TypeOf(r) != Rule) @compileError("rules should be a tuple whose elements are of type `Rule`");
+
+            node = try r.p(self);
+            if (node != 0) {
+                delimiter = r.delimiter;
+                break;
+            }
+        }
+        try nodes.append(node);
+
+        if (close_br) |close| {
+            if (self.eat(close)) break;
+            try self.expectNextToken(delimiter, "expected a delimiter or a closing bracket");
+            if (self.eat(close)) break;
+        } else {
+            // if eat one delimiter, then go for next
+            if (self.eat(delimiter))
+                continue
+            else
+                break;
+        }
+    }
+
+    return nodes;
 }

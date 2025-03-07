@@ -1,1 +1,5 @@
-"say you, " ++ "say me"
+Node {
+    .next = null,
+    .prev = null,
+    .data = data.wtf
+}

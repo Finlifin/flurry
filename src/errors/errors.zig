@@ -15,3 +15,11 @@ pub const Err = error{
 
     UnexpectedToken,
 };
+
+pub const Kind = enum {
+    err,
+    warn,
+    log,
+    help,
+    info,
+};

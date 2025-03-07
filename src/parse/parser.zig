@@ -6,6 +6,8 @@ const exprs = @import("exprs.zig");
 
 pub const Parser = struct {
     alc: std.mem.Allocator,
+    tmp_buf: []u8,
+    tmp_alc: std.heap.FixedBufferAllocator,
 
     // for debug
     tags: std.ArrayList(ast.Tag),
@@ -27,6 +29,8 @@ pub const Parser = struct {
     ) Err!Parser {
         var result: Parser = .{
             .alc = allocator,
+            .tmp_buf = try std.heap.page_allocator.alloc(u8, 1024 * 1024),
+            .tmp_alc = undefined,
             .file = file,
             .option = option,
             .tags = undefined,
@@ -39,6 +43,7 @@ pub const Parser = struct {
             .err_msg = "everything's fine",
         };
         try result.ast.nodes.append(Tag.invalid.into());
+        result.tmp_alc = std.heap.FixedBufferAllocator.init(result.tmp_buf);
         if (option.mode == .debug) {
             result.tags = std.ArrayList(ast.Tag).init(allocator);
             result.tags_location = std.ArrayList(u64).init(allocator);
@@ -60,8 +65,8 @@ pub const Parser = struct {
 
     // if next token is not the same as token, return false
     // if next token is the same as token, return true and move cursor
-    pub fn eat(self: *Parser, token: Tag) bool {
-        if (self.cursor + 1 >= self.file.tokens.?.len)
+    pub fn eat(self: *Parser, token: w.Token.Tag) bool {
+        if (self.cursor + 1 >= self.file.tokens.?.items.len)
             return false;
 
         if (self.file.tokens.?.items[self.cursor + 1].tag != token)
@@ -216,19 +221,74 @@ pub const Parser = struct {
         _ = self.cursors.pop();
     }
 
-    pub inline fn tryExpr(self: *Parser) Err!u64 {
+    pub fn tryExpr(self: *Parser) Err!u64 {
         return try exprs.tryExpr(self, .{});
     }
 
     pub fn parse(self: *Parser) Err!void {
-        self.ast.root = try self.tryExpr();
-        self.file.ast = self.ast;
+        defer {
+            self.file.ast = self.ast;
+            self.cursors.deinit();
+            std.heap.page_allocator.free(self.tmp_buf);
 
-        self.cursors.deinit();
-        if (self.option.mode == .debug) {
-            self.tags_location.deinit();
-            self.tags.deinit();
+            if (self.option.mode == .debug) {
+                self.tags_location.deinit();
+                self.tags.deinit();
+            }
         }
+
+        self.ast.root = self.tryExpr() catch |e| {
+            switch (e) {
+                error.UnexpectedToken => {
+                    self.file.report(
+                        self.alc,
+                        self.err.unexpected_token.got,
+                        .err,
+                        Err.UnexpectedToken,
+                        "wtf",
+                        3,
+                    ) catch @panic("failed to report error");
+                },
+                else => {},
+            }
+            self.ast.root = 0;
+
+            for (self.ast.nodes.items, 0..) |node, i| {
+                std.debug.print("<{}, {}>,", .{ i, node });
+            }
+            std.debug.print("\n", .{});
+            for (self.tags_location.items, 0..) |node, i| {
+                std.debug.print("<{}, {}>,", .{ i, node });
+            }
+            std.debug.print("\n", .{});
+            return;
+        };
+    }
+
+    pub fn expectNextToken(self: *Parser, tag: w.Token.Tag, msg: []const u8) Err!void {
+        if (!self.eat(tag)) {
+            self.err = ErrPayload{ .unexpected_token = .{
+                .got = self.peekToken(),
+                .span = w.LSpan{
+                    .from = self.cursors.items[self.cursors.items.len - 1] + 1,
+                    .to = self.cursor,
+                },
+            } };
+            self.err_msg = msg;
+            return Err.UnexpectedToken;
+        }
+    }
+
+    pub fn unexpectedToken(self: *Parser, msg: []const u8) Err {
+        self.err = ErrPayload{ .unexpected_token = .{
+            .got = self.peekToken(),
+            .span = w.LSpan{
+                .from = self.cursors.items[self.cursors.items.len - 1] + 1,
+                .to = self.cursor,
+            },
+        } };
+        self.err_msg = msg;
+        return Err.UnexpectedToken;
     }
 
     pub fn invalidExpr(
