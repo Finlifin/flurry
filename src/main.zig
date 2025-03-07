@@ -1,23 +1,26 @@
 const std = @import("std");
-const Parse = @import("parse/Parse.zig");
-const Lex = @import("lex/lex.zig");
-const Gpa = std.heap.GeneralPurposeAllocator(.{});
+const w = @import("common.zig");
+const parse = @import("parse/parser.zig");
 
 pub fn main() !void {
-    var gpa = Gpa{};
-    // defer if (gpa.deinit() == .leak) {};
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer if (gpa.deinit() == .leak) std.debug.print("leaked..", .{});
 
-    const src_file = std.fs.cwd().openFile("test.fl", .{ .mode = .read_only }) catch unreachable;
-    defer src_file.close();
-    const src = src_file.readToEndAlloc(gpa.allocator(), 1024 * 1024) catch unreachable;
-    defer gpa.allocator().free(src);
+    var sp = w.Sp.init(gpa.allocator());
+    defer sp.deinit();
 
-    const tokens = Lex.lex(gpa.allocator(), src);
+    var vfs = try w.Vfs.init(gpa.allocator(), .{ .mode = .release });
+    defer vfs.deinit();
 
-    var p = Parse.init(gpa.allocator(), gpa.allocator(), src, &tokens);
-    const expr = try p.pExpr();
+    try vfs.buildVfsFromDisk();
 
-    p.dumpTokens();
-    // p.directDump();
-    p.dump(expr, 0);
+    const test_file = vfs.findNodeByPath("test.fl") orelse return error.FileNotFound;
+    const test_file_path = try test_file.fullPath(gpa.allocator());
+    defer gpa.allocator().free(test_file_path);
+    std.debug.print("DEBUG: test.fl path: {s}\n", .{test_file_path});
+
+    try test_file.lexModule(gpa.allocator());
+    try test_file.dumpTokens(gpa.allocator());
+    try test_file.parseModule(gpa.allocator());
+    try test_file.dumpAst();
 }
