@@ -1,0 +1,1 @@
+(file_scope (len 1) (if_is_match (image (id data) (id type))(len 2) (branch (pattern_diamond_call todo) (expr_statement (call (id println)(len 1) (str "Array"))))(branch (id _) (expr_statement (call (id println)(len 1) (str "Not an Array"))))))

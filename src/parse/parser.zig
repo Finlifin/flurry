@@ -2,7 +2,9 @@ const std = @import("std");
 const w = @import("../common.zig");
 const ast = @import("ast.zig");
 const vfs = @import("../vfs/vfs.zig");
-const exprs = @import("exprs.zig");
+const exprs = @import("expr.zig");
+const patterns = @import("pattern.zig");
+const statements = @import("statement.zig");
 
 pub const Parser = struct {
     alc: std.mem.Allocator,
@@ -225,6 +227,14 @@ pub const Parser = struct {
         return try exprs.tryExpr(self, .{});
     }
 
+    pub fn tryPattern(self: *Parser) Err!u64 {
+        return try patterns.tryPattern(self, .{});
+    }
+
+    pub fn tryStatement(self: *Parser) Err!u64 {
+        return try statements.tryStatement(self);
+    }
+
     pub fn parse(self: *Parser) Err!void {
         defer {
             self.file.ast = self.ast;
@@ -237,24 +247,69 @@ pub const Parser = struct {
             }
         }
 
-        self.ast.root = self.tryExpr() catch |e| {
+        self.ast.root = statements.tryFileScope(self) catch |e| {
             switch (e) {
                 error.UnexpectedToken => {
                     self.file.report(
                         self.alc,
                         self.err.unexpected_token.got,
                         .err,
-                        Err.UnexpectedToken,
-                        "wtf",
+                        e,
+                        self.err_msg,
                         3,
                     ) catch @panic("failed to report error");
                 },
-                else => {},
+                error.InvalidExpr => {
+                    self.file.report(
+                        self.alc,
+                        self.err.invalid_expr.got,
+                        .err,
+                        e,
+                        self.err_msg,
+                        3,
+                    ) catch @panic("failed to report error");
+                },
+                error.InvalidPattern => {
+                    self.file.report(
+                        self.alc,
+                        self.err.invalid_pattern.got,
+                        .err,
+                        e,
+                        self.err_msg,
+                        3,
+                    ) catch @panic("failed to report error");
+                },
+                error.InvalidModPath => {
+                    self.file.report(
+                        self.alc,
+                        self.err.invalid_path.got,
+                        .err,
+                        e,
+                        self.err_msg,
+                        3,
+                    ) catch @panic("failed to report error");
+                },
+                error.InvalidStatement => {
+                    self.file.report(
+                        self.alc,
+                        self.err.invalid_statement.got,
+                        .err,
+                        e,
+                        self.err_msg,
+                        3,
+                    ) catch @panic("failed to report error");
+                },
+
+                else => @panic("unknown error"),
             }
             self.ast.root = 0;
 
             for (self.ast.nodes.items, 0..) |node, i| {
                 std.debug.print("<{}, {}>,", .{ i, node });
+            }
+            std.debug.print("\n", .{});
+            for (self.tags.items, 0..) |node, i| {
+                std.debug.print("<{}, {s}>,", .{ i, node.toString() });
             }
             std.debug.print("\n", .{});
             for (self.tags_location.items, 0..) |node, i| {
@@ -307,6 +362,74 @@ pub const Parser = struct {
         self.err_msg = msg;
         return Err.InvalidExpr;
     }
+
+    pub fn invalidPattern(
+        self: *Parser,
+        msg: []const u8,
+    ) Err {
+        self.err = ErrPayload{
+            .invalid_pattern = .{
+                .got = self.peekToken(),
+                .span = w.LSpan{
+                    .from = self.cursors.items[self.cursors.items.len - 1] + 1,
+                    .to = self.cursor,
+                },
+            },
+        };
+        self.err_msg = msg;
+        return Err.InvalidPattern;
+    }
+
+    pub fn invalidPath(
+        self: *Parser,
+        msg: []const u8,
+    ) Err {
+        self.err = ErrPayload{
+            .invalid_expr = .{
+                .got = self.peekToken(),
+                .span = w.LSpan{
+                    .from = self.cursors.items[self.cursors.items.len - 1] + 1,
+                    .to = self.cursor,
+                },
+            },
+        };
+        self.err_msg = msg;
+        return Err.InvalidModPath;
+    }
+
+    pub fn invalidStatement(
+        self: *Parser,
+        msg: []const u8,
+    ) Err {
+        self.err = ErrPayload{
+            .invalid_statement = .{
+                .got = self.peekToken(),
+                .span = w.LSpan{
+                    .from = self.cursors.items[self.cursors.items.len - 1] + 1,
+                    .to = self.cursor,
+                },
+            },
+        };
+        self.err_msg = msg;
+        return Err.InvalidStatement;
+    }
+
+    pub fn invalidDefinition(
+        self: *Parser,
+        msg: []const u8,
+    ) Err {
+        self.err = ErrPayload{
+            .invalid_definition = .{
+                .got = self.peekToken(),
+                .span = w.LSpan{
+                    .from = self.cursors.items[self.cursors.items.len - 1] + 1,
+                    .to = self.cursor,
+                },
+            },
+        };
+        self.err_msg = msg;
+        return Err.InvalidDefinition;
+    }
 };
 
 const Err = w.Err;
@@ -319,6 +442,22 @@ pub const ErrPayload = union {
         span: w.LSpan,
     },
     invalid_expr: struct {
+        got: w.Token,
+        span: w.LSpan,
+    },
+    invalid_pattern: struct {
+        got: w.Token,
+        span: w.LSpan,
+    },
+    invalid_path: struct {
+        got: w.Token,
+        span: w.LSpan,
+    },
+    invalid_statement: struct {
+        got: w.Token,
+        span: w.LSpan,
+    },
+    invalid_definition: struct {
         got: w.Token,
         span: w.LSpan,
     },

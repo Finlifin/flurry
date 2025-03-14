@@ -1,5 +1,17 @@
-Node {
-    .next = null,
-    .prev = null,
-    .data = data.wtf
+pure comptime fn println(
+    comptime format: str,
+    ...varags: fmt.ParseFormat(format)
+) {
+    print(format ++ "\n", ...varags);
 }
+
+
+
+
+
+
+
+
+
+
+

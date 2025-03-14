@@ -12,8 +12,16 @@ pub const Err = error{
     InvalidExpr,
     InvalidPattern,
     InvalidStatement,
+    InvalidModPath,
+    InvalidDefinition,
 
+    NoRecordCall,
+    EndOfTerm,
     UnexpectedToken,
+
+    UnknownError,
+    TestingError,
+    NoError,
 };
 
 pub const Kind = enum {

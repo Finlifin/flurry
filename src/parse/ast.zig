@@ -94,10 +94,12 @@ pub const Tag = enum(u64) {
     // refer -> expr . ref
     // handler_apply -> expr . use(expr)
     // type_cast -> expr . as(expr)
+    // as_dyn -> expr . dyn(expr)
     deref,
     refer,
     handler_apply,
     type_cast,
+    as_dyn,
 
     // effect_elimination -> expr # { pattern_branch* }
     // error_elimination -> expr ! { (catch_branch | pattern_branch)* }
@@ -105,6 +107,7 @@ pub const Tag = enum(u64) {
     effect_elimination,
     error_elimination,
     option_elimination,
+    catch_branch,
 
     // effect_emit -> expr #
     // error_throw -> expr !
@@ -146,6 +149,8 @@ pub const Tag = enum(u64) {
     // pattern_tuple -> ( pattern* )
     pattern_tuple,
 
+    // property_pattern -> id : pattern
+    property_pattern,
     // pattern_record -> { (id | id : pattern)*  }
     pattern_record,
 
@@ -293,16 +298,19 @@ pub const Tag = enum(u64) {
     assign_div,
     assign_mod,
 
-    // -- 这四个用于形式化验证
+    // -- 这几个用于形式化验证
     // asserts -> asserts expr
     // assumes -> assumes expr
     // invariant -> invariant expr
+    // decreases -> decreases expr
     // -- 数据结构specification
     // axiom -> axiom expr
     asserts,
     assumes,
     invariant,
+    decreases,
     axiom,
+    invariants,
 
     // -- 基本分支语句
     // condition_branch -> expr => stmt | block
@@ -361,7 +369,9 @@ pub const Tag = enum(u64) {
     // param_id -> id
     // param_optional_id -> .id
     // param_self -> self
+    // param_self_ref -> *self
     // param_itself -> itself
+    // param_itself_ref -> *itself
     // param_rest_bind -> ... id: expr
     param_optional,
     param_typed,
@@ -369,8 +379,11 @@ pub const Tag = enum(u64) {
     param_id,
     param_optional_id,
     param_self,
+    param_self_ref,
     param_itself,
+    param_itself_ref,
     param_rest_bind,
+    params,
 
     // return_type -> -> expr
     return_type,
@@ -394,8 +407,9 @@ pub const Tag = enum(u64) {
     extend,
 
     // struct_field -> id : expr (= expr)?
-    // struct_def -> struct id? ( param* ) clauses? block(struct_field*)
+    // struct_def -> struct id? clauses? block(struct_field*)
     struct_field,
+    struct_def_body,
     struct_def,
 
     // enum_variant_with_struct -> id block(struct_field)
@@ -403,16 +417,18 @@ pub const Tag = enum(u64) {
     // enum_variant_with_sub_enum -> id . block(enum_variant)
     // enum_variant_def_with_pattern -> id = pattern
     // enum_variant -> id | enum_variant_with_struct | enum_variant_with_tuple | enum_variant_with_sub_enum | enum_variant_def_with_pattern
-    // enum_def -> enum id? ( param* ) clauses? block(enum_variant*)
+    // enum_def -> enum id? clauses? block(enum_variant*)
     enum_variant_with_struct,
     enum_variant_with_tuple,
     enum_variant_with_sub_enum,
     enum_variant_def_with_pattern,
+    enum_def_body,
     enum_def,
 
     // union_variant -> id : expr
-    // union_def -> union id? ( param* ) clauses? block(union_variant*)
+    // union_def -> union id? clauses? block(union_variant*)
     union_variant,
+    union_def_body,
     union_def,
 
     // pub term
@@ -421,6 +437,18 @@ pub const Tag = enum(u64) {
     attr_def,
     // property -> .id expr
     property,
+    // inline term
+    inline_def,
+    // pure term
+    pure_def,
+    // comptime term
+    comptime_def,
+
+    // expand_items -> ... expr
+    expand_items,
+
+    file_scope,
+
     invalid,
 
     pub inline fn into(t: Tag) u64 {
@@ -467,8 +495,12 @@ pub const Ast = struct {
         switch (tag) {
             // single tag
             .self,
+            .param_self_ref,
+            .itself,
+            .param_itself_ref,
             .invalid,
             .null,
+            .unit,
             => {},
             // with single token
             .int,
@@ -483,7 +515,44 @@ pub const Ast = struct {
             },
 
             // with single child
+            .pub_def,
+            .inline_def,
+            .pure_def,
+            .comptime_def,
+
             .symbol,
+            .use_statement,
+            .expr_statement,
+            .asserts,
+            .assumes,
+            .invariant,
+            .decreases,
+            .axiom,
+            .mod_file,
+            .do_block,
+            .atomic_block,
+            .comptime_block,
+            .async_block,
+            .unsafe_block,
+            .pattern_from_expr,
+            .expr_from_pattern,
+            .path_select_all,
+            .pattern_option_some,
+            .effect_emit,
+            .error_throw,
+            .option_unwrap,
+            .pattern_type_bind,
+            .return_type,
+            .gradual_return_type,
+            .range_from,
+            .range_to,
+            .range_to_inclusive,
+            .pattern_range_from,
+            .pattern_range_to,
+            .pattern_range_to_inclusive,
+            .expand_items,
+            .clause_type_decl,
+            .clause_type_decl_optional,
             => {
                 try self.dump(self.getNode(node_index + 1), writer);
             },
@@ -504,53 +573,90 @@ pub const Ast = struct {
             .bool_gt_eq,
             .bool_lt,
             .bool_lt_eq,
+            .bool_matches,
+            .type_with,
+            .trait_bound,
             .index_call,
+            .as_dyn,
+            .type_cast,
+            .int_extension,
+            .real_extension,
+            .str_extension,
+            .char_extension,
+            .refer,
+            .handler_apply,
             .range_from_to,
             .range_from_to_inclusive,
-            .use_statement,
+            .pattern_range_from_to,
+            .pattern_range_from_to_inclusive,
             .break_statement,
-            .continue_statement,
             .return_statement,
+            .continue_statement,
             .assign,
             .assign_add,
             .assign_sub,
             .assign_div,
             .assign_mul,
             .assign_mod,
+            .path_select,
+            .pattern_select,
+            .condition_branch,
+            .branch,
+            .post_match,
+            .effect_elimination,
+            .error_elimination,
+            .option_elimination,
+            .property_pattern,
+            .pattern_as_bind,
+            .pattern_if_guard,
+            .enum_variant_def_with_pattern,
+            .union_variant,
+            .param_typed,
+            .param_rest_bind,
+            .param_trait_bound,
+            .clause_decl,
+            .clause_decl_optional,
+            .clause_trait_bound_decl,
             => {
                 try self.dump(self.getNode(node_index + 1), writer);
                 try writer.writeAll(" ");
                 try self.dump(self.getNode(node_index + 2), writer);
             },
             // // with multiple children
-            // .object,
-            // .list,
-            // .tuple,
-            // .object_pattern,
-            // .tuple_pattern,
-            // .list_pattern,
-            // .block,
-            // .file_scope,
-            // .clauses,
-            // .branches,
-            // .when,
-            // .struct_def_body,
-            // .enum_def_body,
-            // .union_def_body,
-            // => {
-            //     const len = self.getNode(node_index + 1);
-            //     try writer.print("(len {d}) ", .{len});
-            //     for (0..len) |i| {
-            //         try self.dump(self.getNode(node_index + 2 + i), writer);
-            //     }
-            // },
+            .record,
+            .list,
+            .tuple,
+            .pattern_record,
+            .pattern_tuple,
+            .pattern_list,
+            .block,
+            .file_scope,
+            .clauses,
+            .params,
+            .struct_def_body,
+            .enum_def_body,
+            .union_def_body,
+            .invariants,
+            .when_statement,
+            => {
+                const len = self.getNode(node_index + 1);
+                try writer.print("(len {d}) ", .{len});
+                for (0..len) |i| {
+                    try self.dump(self.getNode(node_index + 2 + i), writer);
+                }
+            },
             // // one left item and multiple children
             .call,
             .record_call,
+            .curry_call,
+            .if_is_match,
             .diamond_call,
             .pattern_call,
             .pattern_record_call,
             .path_select_multi,
+            .enum_variant_with_struct,
+            .enum_variant_with_tuple,
+            .enum_variant_with_sub_enum,
             => {
                 try self.dump(self.getNode(node_index + 1), writer);
                 const len = self.getNode(node_index + 2);
@@ -560,47 +666,56 @@ pub const Ast = struct {
                 }
             },
             // // two left items and multiple children
-            // .derivation,
-            // => {
-            //     try self.dump(self.getNode(node_index + 1), writer);
-            //     try self.dump(self.getNode(node_index + 2), writer);
-            //     const len = self.getNode(node_index + 3);
-            //     try writer.print("(len {d}) ", .{len});
-            //     for (0..len) |i| {
-            //         try self.dump(self.getNode(node_index + 4 + i), writer);
-            //     }
-            // },
-            // // three children!
-            // .and_is,
-            // .let_decl,
-            // .const_decl,
-            // .clause,
-            // .if_stmt,
-            // .struct_def,
-            // .enum_def,
-            // .union_def,
-            // .struct_field,
-            // .@".id: expr = expr'",
-            // .for_loop,
-            // .while_is_loop,
-            // .trait_def,
-            // => {
-            //     try self.dump(self.getNode(node_index + 1), writer);
-            //     try writer.writeAll(" ");
-            //     try self.dump(self.getNode(node_index + 2), writer);
-            //     try writer.writeAll(" ");
-            //     try self.dump(self.getNode(node_index + 3), writer);
-            // },
-            // // four children!
-            // .impl_def,
-            // .if_is_stmt,
-            // => {
-            //     try self.dump(self.getNode(node_index + 1), writer);
-            //     for (2..5) |i| {
-            //         try writer.writeAll(" ");
-            //         try self.dump(self.getNode(node_index + i), writer);
-            //     }
-            // },
+            .derive,
+            => {
+                try self.dump(self.getNode(node_index + 1), writer);
+                try self.dump(self.getNode(node_index + 2), writer);
+                const len = self.getNode(node_index + 3);
+                try writer.print("(len {d}) ", .{len});
+                for (0..len) |i| {
+                    try self.dump(self.getNode(node_index + 4 + i), writer);
+                }
+            },
+            // three children!
+            .let_decl,
+            .const_decl,
+            .if_statement,
+            .pattern_and_is,
+            .struct_field,
+            .struct_def,
+            .enum_def,
+            .union_def,
+            => {
+                try self.dump(self.getNode(node_index + 1), writer);
+                try writer.writeAll(" ");
+                try self.dump(self.getNode(node_index + 2), writer);
+                try writer.writeAll(" ");
+                try self.dump(self.getNode(node_index + 3), writer);
+            },
+            // four children!
+            .if_is_pattern,
+            .while_loop,
+            .impl_def,
+            .extend,
+            .closure,
+            => {
+                try self.dump(self.getNode(node_index + 1), writer);
+                for (2..5) |i| {
+                    try writer.writeAll(" ");
+                    try self.dump(self.getNode(node_index + i), writer);
+                }
+            },
+            // five children!
+            .while_is_pattern,
+            .for_loop,
+            .fn_def,
+            => {
+                try self.dump(self.getNode(node_index + 1), writer);
+                for (2..6) |i| {
+                    try writer.writeAll(" ");
+                    try self.dump(self.getNode(node_index + i), writer);
+                }
+            },
             // // |args| (-> expr)? clause* (block | expr)
             // .lambda => {
             //     try self.dump(self.getNode(node_index + 1), writer);

@@ -334,7 +334,7 @@ pub const Node = struct {
         defer allocator.free(path);
 
         const lines = self.locateTokens(from_token, to_token, extra_lines);
-        const err_msg = errors.errorMsg(code) orelse "unknown error";
+        const err_msg = @errorName(code);
         var buffer = std.ArrayList(u8).init(allocator);
         defer buffer.deinit();
         const writer = buffer.writer();
@@ -344,14 +344,14 @@ pub const Node = struct {
             errors.Kind.warn => "warning",
             errors.Kind.info => "info",
             errors.Kind.help => "help",
-            errors.Kind.note => "note",
+            errors.Kind.log => "log",
         };
         const kind_color = switch (kind) {
             errors.Kind.err => "\x1b[31m",
             errors.Kind.warn => "\x1b[33m",
             errors.Kind.info => "\x1b[36m",
             errors.Kind.help => "\x1b[32m",
-            errors.Kind.note => "\x1b[34m",
+            errors.Kind.log => "\x1b[34m",
         };
         const reset_color = "\x1b[0m\x1b[39m";
         const bold = "\x1b[1m";
