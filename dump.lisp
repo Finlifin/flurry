@@ -1,1 +1,0 @@
-(file_scope (len 3) (mod (id A) (block (len 2) (mod (id B) (block (len 0) ))(mod (id C) (block (len 0) ))))(mod (id B) (block (len 0) ))(mod (id C) (block (len 0) )))
