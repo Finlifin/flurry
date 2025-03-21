@@ -625,7 +625,7 @@ fn tryModuleDef(self: *Parser) Err!u64 {
         return self.invalidStatement("expected a module name after 'mod'");
 
     const rules = .{
-        common.rule("definition", tryDefinition),
+        common.ruleWithDelimiter("definition", tryDefinition, .@";"),
         common.ruleWithDelimiter("statements", statements.tryStatement, .@";"),
     };
 

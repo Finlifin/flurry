@@ -617,6 +617,7 @@ pub const Ast = struct {
             .clause_decl,
             .clause_decl_optional,
             .clause_trait_bound_decl,
+            .mod,
             => {
                 try self.dump(self.getNode(node_index + 1), writer);
                 try writer.writeAll(" ");
@@ -791,7 +792,7 @@ pub const Ast = struct {
         self: *Ast,
         node: u64,
         kind: errors.Kind,
-        code: errors.Err,
+        code: anyerror,
         label_info: []const u8,
         extra_lines: u64,
     ) !void {

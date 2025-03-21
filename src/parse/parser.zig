@@ -318,6 +318,21 @@ pub const Parser = struct {
             std.debug.print("\n", .{});
             return;
         };
+
+        if (self.option.dump_layout) {
+            for (self.ast.nodes.items, 0..) |node, i| {
+                std.debug.print("<{}, {}>,", .{ i, node });
+            }
+            std.debug.print("\n", .{});
+            for (self.tags.items, 0..) |node, i| {
+                std.debug.print("<{}, {s}>,", .{ i, node.toString() });
+            }
+            std.debug.print("\n", .{});
+            for (self.tags_location.items, 0..) |node, i| {
+                std.debug.print("<{}, {}>,", .{ i, node });
+            }
+            std.debug.print("\n", .{});
+        }
     }
 
     pub fn expectNextToken(self: *Parser, tag: w.Token.Tag, msg: []const u8) Err!void {
@@ -465,6 +480,7 @@ pub const ErrPayload = union {
 
 pub const ParseOption = struct {
     mode: Mode = .debug,
+    dump_layout: bool = false,
 
     const Mode = enum {
         debug,

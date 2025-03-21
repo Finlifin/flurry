@@ -112,6 +112,24 @@ pub const Node = struct {
         return path.toOwnedSlice();
     }
 
+    pub const EntryKind = enum { main, mod, lib };
+    pub fn locateEntry(self: *Node, kind: EntryKind) ?*Node {
+        if (self.kind == .file)
+            return null;
+
+        const filename = switch (kind) {
+            .main => "main.fl",
+            .mod => "mod.fl",
+            .lib => "lib.fl",
+        };
+
+        for (self.children.items) |child| {
+            if (std.mem.eql(u8, child.name, filename))
+                return child;
+        }
+        return null;
+    }
+
     // 读取文件内容
     pub fn loadModule(self: *Node, allocator: std.mem.Allocator) ![]const u8 {
         // dir nodes are not implemented
@@ -141,14 +159,14 @@ pub const Node = struct {
         self.tokens = try lex.lex(allocator, content);
     }
 
-    pub fn parseModule(self: *Node, allocator: std.mem.Allocator) !void {
+    pub fn parseModule(self: *Node, allocator: std.mem.Allocator, opt: parse.ParseOption) !void {
         // dir nodes are not implemented
         std.debug.assert(self.kind == .file);
 
         if (self.ast != null)
             return error.FileAlreadyParsed;
 
-        var parser = try parse.Parser.init(allocator, self, .{});
+        var parser = try parse.Parser.init(allocator, self, opt);
         try parser.parse();
     }
 
@@ -163,8 +181,9 @@ pub const Node = struct {
 
     pub fn dumpTokens(self: *Node, allocator: std.mem.Allocator) !void {
         if (self.tokens) |tokens| {
-            for (tokens.items) |token| {
-                std.debug.print("| {s}:\t\t{s}\n", .{
+            for (tokens.items, 0..) |token, i| {
+                std.debug.print("{d} | {s}:\t\t{s}\n", .{
+                    i,
                     @tagName(token.tag),
                     try self.srcContentT(token, allocator),
                 });
@@ -252,7 +271,7 @@ pub const Node = struct {
         allocator: std.mem.Allocator,
         token: lex.Token,
         kind: errors.Kind,
-        code: errors.Err,
+        code: anyerror,
         label_info: []const u8,
         extra_lines: u64,
     ) !void {
@@ -324,7 +343,7 @@ pub const Node = struct {
         from_token: lex.Token,
         to_token: lex.Token,
         kind: errors.Kind,
-        code: errors.Err,
+        code: anyerror,
         label_info: []const u8,
         extra_lines: u64,
     ) !void {

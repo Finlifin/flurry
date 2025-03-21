@@ -1,0 +1,12 @@
+mod A {
+    mod B {}
+    mod C {}
+}
+
+mod B {}
+mod C {}
+
+
+
+
+
