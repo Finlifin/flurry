@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-.zig-cache
-zig-out
-=======
 # macOS
 .DS_Store
 
@@ -34,4 +30,3 @@ metals.sbt
 .idea
 .idea_modules
 /.worksheet/
->>>>>>> 2d2dc99 (Add: move to scala)

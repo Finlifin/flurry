@@ -1,0 +1,6 @@
+fn `say you, say me`() {
+    let a = 1;
+    let b = 2;
+    let c = a + b;
+    println("The sum of {} and {} is {}", a, b, c);
+}
