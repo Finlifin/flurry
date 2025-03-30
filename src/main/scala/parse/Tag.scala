@@ -135,7 +135,7 @@ enum Tag {
   case itself
 
   // -----------------//
-  //    patterns    //
+  //    patterns      //
   // -----------------//
   // pattern_from_expr -> < expr >
   case pattern_from_expr
@@ -160,6 +160,9 @@ enum Tag {
   // pattern_not -> not pattern
   case pattern_not
 
+  // pattern_async -> async pattern
+  case pattern_async
+
   // pattern_type_bind -> ' id
   case pattern_type_bind
 
@@ -183,6 +186,12 @@ enum Tag {
 
   // pattern_option_some -> pattern ?
   case pattern_option_some
+
+  // pattern_error_ok -> pattern !
+  case pattern_error_ok
+
+  // pattern_error_error -> error
+  case pattern_error_error
 
   // pattern_range_from -> pattern ..
   case pattern_range_from
@@ -222,6 +231,7 @@ enum Tag {
 
   // branch -> pattern => statement | block,
   case branch
+  case branches
 
   // if_is_pattern -> if expr is pattern block (else (if | block))?
   case if_is_pattern
@@ -232,14 +242,14 @@ enum Tag {
   // post_match -> expr match { branch }
   case post_match
 
-  // while_is_pattern -> while label? expr is pattern invariants? block
+  // while_is_pattern -> while label? expr is pattern block
   case while_is_pattern
 
-  // while_is_match -> while label? expr is invariants? { branch* }
+  // while_is_match -> while label? expr is { branch* }
   case while_is_match
 
   // ----------------//
-  //   statements   //
+  //   statements    //
   // ----------------//
   // use_statement -> use mod_path
   // mod_path ->
@@ -254,6 +264,7 @@ enum Tag {
   // path_select_multi -> mod_path . { mod_path*}
   // path_select_all -> mod_path . *
   // super_path -> (.)+ mod_path
+  // exclude_path -> not id
   // package_path -> @ mod_path
   // path_as_bind -> mod_path as id
   case use_statement
@@ -261,6 +272,7 @@ enum Tag {
   case path_select_multi
   case path_select_all
   case super_path
+  case exclude_path
   case package_path
   case path_as_bind
 
@@ -270,7 +282,7 @@ enum Tag {
   // -- 控制流操作
   // break -> break label? if_guard?
   // continue -> continue label? if_guard?
-  // return -> return label? if_guard?
+  // return -> return expr? if_guard?
   case break_statement
   case continue_statement
   case return_statement
@@ -307,7 +319,6 @@ enum Tag {
   case invariant
   case decreases
   case axiom
-  case invariants
 
   // -- 基本分支语句
   // condition_branch -> expr => stmt | block
@@ -319,8 +330,8 @@ enum Tag {
   case if_statement
 
   // -- 基本循环语句
-  // for_loop -> for label? pattern in expr invariants? block
-  // while_loop -> while label? expr invariants? block
+  // for_loop -> for label? pattern in expr block
+  // while_loop -> while label? expr block
   // -- 如 whie:loop_example true { ... }, 其中loop_example是label名，并且这是一个死循环
   case for_loop
   case while_loop
@@ -339,7 +350,7 @@ enum Tag {
   case newtype
 
   // ---------------//
-  //  definitions  //
+  //  definitions   //
   // ---------------//
   // clauses -> where clause*
   case clauses
@@ -449,6 +460,15 @@ enum Tag {
   case expand_items
 
   case file_scope
+
+  // a kind of ast node
+  case expr
+  case statement
+  case pattern
+  case definition
+  case mod_path
+  case param
+  case enum_variant
 
   case invalid
 }

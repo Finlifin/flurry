@@ -35,6 +35,6 @@ def dumpTokens(tokens: ListBuffer[Token], src: String): Unit = {
           src.substring(token.from, token.to)
         }
     }
-    println(s" |${token.tag}\t\t$tokenText")
+    println(s" |${token.tag}\t\t$tokenText at ${token.from}:${token.to}")
   }
 }

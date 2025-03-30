@@ -17,15 +17,17 @@ class Lexer(src: String) {
   def next(): Token = {
     if (cursor >= src.length) return token(Tag.eof, src.length, src.length)
 
-    val oldCursor = cursor
+    var oldCursor = cursor
 
-    // 跳过空白字符
-    skipWhitespace()
     if (cursor >= src.length) return token(Tag.eof, src.length, src.length)
 
     val c = src(cursor)
 
     c match {
+      case ' ' | '\t' | '\n' | '\r' =>
+        cursor += 1
+        next()
+
       case '^' =>
         cursor += 1
         token(Tag.`^`, oldCursor, cursor)
@@ -171,7 +173,7 @@ class Lexer(src: String) {
           while (cursor < src.length && src(cursor) != '\n') {
             cursor += 1
           }
-          if (cursor < src.length) cursor += 1 // 跳过换行符
+          // 不跳过换行符，让下一个token处理它
           token(Tag.comment, oldCursor, cursor)
         } else {
           cursor += 1
@@ -233,7 +235,8 @@ class Lexer(src: String) {
                 cursor += 1
               }
             } else {
-              cursor += 1
+              // 如果到达文件末尾但注释未闭合，返回无效token
+              return token(Tag.invalid, oldCursor, cursor)
             }
           }
           token(Tag.comment, oldCursor, cursor)
@@ -285,10 +288,6 @@ class Lexer(src: String) {
           token(Tag.`/`, oldCursor, cursor)
         }
 
-      case '_' =>
-        cursor += 1
-        token(Tag.underscore, oldCursor, cursor)
-
       case '$' =>
         cursor += 1
         token(Tag.`$`, oldCursor, cursor)
@@ -311,14 +310,8 @@ class Lexer(src: String) {
     }
   }
 
-  private def skipWhitespace(): Unit = {
-    while (cursor < src.length && " \t\n\r".contains(src(cursor))) {
-      cursor += 1
-    }
-  }
-
   private def isIdentifierStart(c: Char): Boolean = {
-    c.isLetter
+    c.isLetter || c == '_'
   }
 
   private def isIdentifierPart(c: Char): Boolean = {
@@ -350,84 +343,54 @@ class Lexer(src: String) {
     }
 
     // 如果没有找到结束的双引号，返回无效token
-    return token(Tag.invalid, oldCursor, cursor)
+    token(Tag.invalid, oldCursor, cursor)
   }
 
   private def recognizeId(): Token = {
-    val b = src.getBytes
     val oldCursor = cursor
-    while (true) {
+    
+    // 读取标识符字符
+    while (cursor < src.length && isIdentifierPart(src(cursor))) {
       cursor += 1
-      if (cursor >= src.length) {
-        val identifier = src.substring(oldCursor, cursor)
-        return Tag.keywords.get(identifier) match {
-          case Some(kw) => token(kw, oldCursor, cursor)
-          case None     => token(Tag.id, oldCursor, cursor)
-        }
-      }
-      val c = b(cursor).toChar
-
-      c match {
-        case 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' |
-            'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' |
-            'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' |
-            'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' |
-            'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '0' | '1' | '2' |
-            '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' => {}
-        case _ =>
-          val identifier = src.substring(oldCursor, cursor)
-          return Tag.keywords.get(identifier) match {
-            case Some(kw) => token(kw, oldCursor, cursor)
-            case None     => token(Tag.id, oldCursor, cursor)
-          }
-      }
     }
-    token(Tag.invalid, oldCursor, cursor) // Should not reach here
+    
+    // 提取标识符并检查是否是关键字
+    val identifier = src.substring(oldCursor, cursor)
+    Tag.keywords.get(identifier) match {
+      case Some(kw) => token(kw, oldCursor, cursor)
+      case None     => token(Tag.id, oldCursor, cursor)
+    }
   }
 
   // 23 => int(23)
   // 23.0 => real(23.0)
   private def recognizeDigit(): Token = {
-    val b = src.getBytes
     val oldCursor = cursor
+    var isReal = false
 
-    while (true) {
+    // 读取整数部分
+    while (cursor < src.length && (src(cursor).isDigit || src(cursor) == '_')) {
       cursor += 1
-      if (cursor >= src.length) return token(Tag.int, oldCursor, cursor)
-      val c = b(cursor).toChar
-      c match {
-        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' |
-            '_' => {}
-        case '.' => {
-          // 如果b[self.cursor + 1] == '0'...'9'，则是real
-          if (
-            cursor + 1 < src.length && b(cursor + 1).toChar >= '0' && b(
-              cursor + 1
-            ).toChar <= '9'
-          ) {
-            cursor += 1
-            while (true) {
-              cursor += 1
-              if (cursor >= src.length)
-                return token(Tag.real, oldCursor, cursor)
-              val c_ = b(cursor).toChar
-              if (c_ < '0' || c_ > '9')
-                return token(
-                  Tag.real,
-                  oldCursor,
-                  cursor
-                ) // Break and return real token
-            }
-            token(Tag.real, oldCursor, cursor) // Should not reach here
-          } else {
-            // 如果不是数字，则是int
-            return token(Tag.int, oldCursor, cursor)
-          }
+    }
+
+    // 检查是否有小数点和小数部分
+    if (cursor < src.length && src(cursor) == '.') {
+      if (cursor + 1 < src.length && src(cursor + 1).isDigit) {
+        isReal = true
+        cursor += 1 // 跳过小数点
+        
+        // 读取小数部分
+        while (cursor < src.length && (src(cursor).isDigit || src(cursor) == '_')) {
+          cursor += 1
         }
-        case _ => return token(Tag.int, oldCursor, cursor)
       }
     }
-    token(Tag.invalid, oldCursor, cursor) // Should not reach here
+
+    if (isReal) {
+      token(Tag.real, oldCursor, cursor)
+    } else {
+      token(Tag.int, oldCursor, cursor)
+    }
   }
 
   private def recognizeArbitaryId(): Token = {
@@ -446,7 +409,7 @@ class Lexer(src: String) {
     }
 
     // 如果没有找到结束的反引号，返回无效token
-    return token(Tag.invalid, oldCursor, cursor)
+    token(Tag.invalid, oldCursor, cursor)
   }
 
   private def seperated(at: Int): Boolean = {

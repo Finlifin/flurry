@@ -3,7 +3,6 @@ package lex
 enum Tag {
   // operators
   case `+`
-  case underscore // Replacing `_`
   case `+=`
   case `++`
   case `_+_` // " + "
@@ -103,6 +102,7 @@ enum Tag {
   case k_handles
   case k_if
   case k_impl
+  case k_implicit
   case k_in
   case k_inline
   case k_invariant
@@ -121,7 +121,7 @@ enum Tag {
   case k_opaque
   case k_opens
   case k_or
-  case k_outcome
+  case k_outcomes
   case k_perform
   case k_predicate
   case k_private
@@ -144,6 +144,8 @@ enum Tag {
   case k_union
   case k_unsafe
   case k_use
+  case k_using
+  case k_verified
   case k_when
   case k_while
   case k_where
@@ -196,6 +198,7 @@ object Tag {
     "handles" -> Tag.k_handles,
     "if" -> Tag.k_if,
     "impl" -> Tag.k_impl,
+    "implicit" -> Tag.k_implicit,
     "in" -> Tag.k_in,
     "inline" -> Tag.k_inline,
     "invariant" -> Tag.k_invariant,
@@ -214,7 +217,7 @@ object Tag {
     "opaque" -> Tag.k_opaque,
     "opens" -> Tag.k_opens,
     "or" -> Tag.k_or,
-    "outcome" -> Tag.k_outcome,
+    "outcomes" -> Tag.k_outcomes,
     "perform" -> Tag.k_perform,
     "predicate" -> Tag.k_predicate,
     "private" -> Tag.k_private,
@@ -237,6 +240,8 @@ object Tag {
     "union" -> Tag.k_union,
     "unsafe" -> Tag.k_unsafe,
     "use" -> Tag.k_use,
+    "using" -> Tag.k_using,
+    "verified" -> Tag.k_verified,
     "when" -> Tag.k_when,
     "while" -> Tag.k_while,
     "where" -> Tag.k_where

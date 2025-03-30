@@ -1,12 +1,18 @@
-mod A {
-    mod B {}
-    mod C {}
+struct Node where T {
+	value: T,
+	next: ?*Node<T>,
 }
 
-mod B {}
-mod C {}
+impl Node where T {
+	fn new(value: T) {
+		let node = Node {
+			value: value,
+			next: null,
+		};
+		return node.ref;
+	}
 
-
-
-
-
+	fn set_next(*self, next: *Node<T>) {
+		self.next = next;
+	}
+}

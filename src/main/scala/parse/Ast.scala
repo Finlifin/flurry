@@ -1,9 +1,11 @@
 package parse
 
+import lex.dumpTokens
+
 case class Span(start: Int, end: Int)
 
 class Ast {
-  var root: AstNode = AstNode(Tag.invalid, Span(0, 0))
+  var root: AstNode = AstNode0(Tag.invalid, Span(0, 0))
 }
 
 class AstNode(tag: Tag, var span: Span) {
@@ -22,7 +24,7 @@ class AstNode(tag: Tag, var span: Span) {
 class AstNode0(tag: Tag, span: Span) extends AstNode(tag, span) {
   override def dumpSExpr(writer: java.io.PrintWriter): Unit = {
     super.dumpSExpr(writer)
-    writer.println(")")
+    writer.print(")")
   }
 }
 
@@ -35,7 +37,7 @@ class AstNode1(tag: Tag, span: Span, child: AstNode)
     super.dumpSExpr(writer)
     writer.print(" ")
     child.dumpSExpr(writer)
-    writer.println(")")
+    writer.print(")")
   }
 }
 
@@ -47,7 +49,7 @@ class AstNodeValue[T](tag: Tag, span: Span, value: T)
   override def dumpSExpr(writer: java.io.PrintWriter): Unit = {
     super.dumpSExpr(writer)
     writer.print(" " + value.toString)
-    writer.println(")")
+    writer.print(")")
   }
 }
 
@@ -62,7 +64,7 @@ class AstNodeN(tag: Tag, span: Span, children: List[AstNode])
       writer.print(" ")
       child.dumpSExpr(writer)
     }
-    writer.println(")")
+    writer.print(")")
   }
 }
 
@@ -80,7 +82,7 @@ class AstNodeL(tag: Tag, span: Span, left: AstNode, right: List[AstNode])
       writer.print(" ")
       child.dumpSExpr(writer)
     }
-    writer.println(")")
+    writer.print(")")
   }
 }
 
@@ -96,7 +98,7 @@ class AstNode2(tag: Tag, span: Span, left: AstNode, right: AstNode)
     left.dumpSExpr(writer)
     writer.print(" ")
     right.dumpSExpr(writer)
-    writer.println(")")
+    writer.print(")")
   }
 }
 
@@ -111,4 +113,73 @@ class AstNode3(
   def getFirst: AstNode = first
   def getSecond: AstNode = second
   def getThird: AstNode = third
+
+  override def dumpSExpr(writer: java.io.PrintWriter): Unit = {
+    super.dumpSExpr(writer)
+    writer.print(" ")
+    first.dumpSExpr(writer)
+    writer.print(" ")
+    second.dumpSExpr(writer)
+    writer.print(" ")
+    third.dumpSExpr(writer)
+    writer.print(")")
+  }
+}
+
+class AstNode4(
+    tag: Tag,
+    span: Span,
+    first: AstNode,
+    second: AstNode,
+    third: AstNode,
+    fourth: AstNode
+) extends AstNode(tag, span) {
+  def getFirst: AstNode = first
+  def getSecond: AstNode = second
+  def getThird: AstNode = third
+  def getFourth: AstNode = fourth
+
+  override def dumpSExpr(writer: java.io.PrintWriter): Unit = {
+    super.dumpSExpr(writer)
+    writer.print(" ")
+    first.dumpSExpr(writer)
+    writer.print(" ")
+    second.dumpSExpr(writer)
+    writer.print(" ")
+    third.dumpSExpr(writer)
+    writer.print(" ")
+    fourth.dumpSExpr(writer)
+    writer.print(")")
+  }
+}
+
+class AstNode5(
+    tag: Tag,
+    span: Span,
+    first: AstNode,
+    second: AstNode,
+    third: AstNode,
+    fourth: AstNode,
+    fifth: AstNode
+) extends AstNode(tag, span) {
+  def getFirst: AstNode = first
+  def getSecond: AstNode = second
+  def getThird: AstNode = third
+  def getFourth: AstNode = fourth
+  def getFifth: AstNode = fifth
+
+  override def dumpSExpr(writer: java.io.PrintWriter): Unit = {
+    super.dumpSExpr(writer)
+    writer.print(" ")
+    first.dumpSExpr(writer)
+    writer.print(" ")
+    second.dumpSExpr(writer)
+    writer.print(" ")
+    third.dumpSExpr(writer)
+    writer.print(" ")
+    fourth.dumpSExpr(writer)
+    writer.print(" ")
+    fifth.dumpSExpr(writer)
+    writer.print(")")
+  }
 }
