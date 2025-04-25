@@ -1,18 +1,14 @@
-struct Node where T {
-	value: T,
-	next: ?*Node<T>,
-}
-
-impl Node where T {
-	fn new(value: T) {
-		let node = Node {
-			value: value,
-			next: null,
-		};
-		return node.ref;
-	}
-
-	fn set_next(*self, next: *Node<T>) {
-		self.next = next;
-	}
+-- 冒泡排序
+fn bubble_sort(arr: Slice<T>) where T: Ord {
+    let n = arr.len();
+    ^simd
+    for i in 0..n {
+        ^simd
+        for j in 0..(n - i - 1) {
+            ^no_likely
+            if arr[j] > arr[j + 1] {
+                arr.swap(j, j + 1);
+            }
+        }
+    }
 }

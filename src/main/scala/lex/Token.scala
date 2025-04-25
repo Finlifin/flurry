@@ -8,6 +8,7 @@ enum Tag {
   case `_+_` // " + "
   case `<`
   case `<=`
+  case `<:`
   case `_<_` // " < "
   case `>`
   case `>=`

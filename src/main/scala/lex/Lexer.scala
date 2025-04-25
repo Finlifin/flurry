@@ -32,7 +32,7 @@ def dumpTokens(tokens: ListBuffer[Token], src: String): Unit = {
         if (token.from < 0 || token.to > src.length || token.from >= token.to) {
           s"<INVALID ${token.from}:${token.to}>"
         } else {
-          src.substring(token.from, token.to)
+          s"\"${src.substring(token.from, token.to)}\""
         }
     }
     println(s" |${token.tag}\t\t$tokenText at ${token.from}:${token.to}")

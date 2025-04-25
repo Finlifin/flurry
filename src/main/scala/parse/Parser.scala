@@ -19,85 +19,55 @@ class Parser(var file: VfsNode) {
     var ast = Ast()
     result match {
       case Right(Some(node)) => ast.root = node
-      case Left(e)           => handlerError(e)
-      case _                 => {}
+      case Left(e) => handlerError(e)
+      case _ =>
     }
     ast
   }
 
-  def peek(expected: lex.Tag*): Boolean = {
+  def peek(expected: lex.Tag*): Boolean =
     // check if forward tokens is in expected
-    if (cursor + 1 + expected.length > tokens.length) {
-      false
-    } else {
+    if (cursor + 1 + expected.length > tokens.length) { false }
+    else {
       var result = true
       var i = 0
-      for (i <- 0 until expected.length if result) {
-        if (
-          cursor + 1 + i < tokens.length && tokens(
-            cursor + 1 + i
-          ).tag != expected(i)
-        ) {
-          result = false
-        }
-      }
+      for (i <- 0 until expected.length if result)
+        if (cursor + 1 + i < tokens.length && tokens(cursor + 1 + i).tag != expected(i)) { result = false }
       result
     }
-  }
 
-  def eatToken(expected: lex.Tag): Boolean = {
-    if (cursor + 1 >= tokens.length) {
-      false
-    } else {
+  def eatToken(expected: lex.Tag): Boolean =
+    if (cursor + 1 >= tokens.length) { false }
+    else {
       if (tokens(cursor + 1).tag == expected) {
         cursor += 1
         true
-      } else {
-        false
-      }
+      } else { false }
     }
-  }
 
   // unchecked
-  def eatTokens(amount: Int) = {
-    cursor += amount
-  }
+  def eatTokens(amount: Int) = cursor += amount
 
-  def nextToken(): Token = {
-    if (cursor + 1 >= tokens.length) {
-      lex.Token(lex.Tag.eof, 0, 0)
-    } else {
+  def nextToken(): Token =
+    if (cursor + 1 >= tokens.length) { lex.Token(lex.Tag.eof, 0, 0) }
+    else {
       cursor += 1
       tokens(cursor)
     }
-  }
 
-  def peekToken(): Token = {
-    if (cursor + 1 >= tokens.length) {
-      lex.Token(lex.Tag.eof, 0, 0)
-    } else {
-      tokens(cursor + 1)
-    }
-  }
+  def peekToken(): Token =
+    if (cursor + 1 >= tokens.length) { lex.Token(lex.Tag.eof, 0, 0) }
+    else { tokens(cursor + 1) }
 
-  inline def srcContentT(token: Token): String =
-    src.substring(token.from, token.to)
+  inline def srcContentT(token: Token): String = src.substring(token.from, token.to)
 
-  def currentToken(): Token = {
-    if (cursor >= tokens.length) {
-      lex.Token(lex.Tag.eof, 0, 0)
-    } else {
-      tokens(cursor)
-    }
-  }
+  def currentToken(): Token =
+    if (cursor >= tokens.length) { lex.Token(lex.Tag.eof, 0, 0) }
+    else { tokens(cursor) }
 
-  def getToken(index: Int): Token = {
-    if (index >= tokens.length) {
-      lex.Token(lex.Tag.eof, 0, 0)
-    } else {
-      tokens(index)
-    }
-  }
+  def getToken(index: Int): Token =
+    if (index >= tokens.length) { lex.Token(lex.Tag.eof, 0, 0) }
+    else { tokens(index) }
 
   def currentSpan(): Span =
     // file.reportSpan(
@@ -108,21 +78,18 @@ class Parser(var file: VfsNode) {
     //   s"create span: (${cursors.top} ${cursor}), while ${cursors}",
     //   3,
     // )
-    
+
     Span(cursors.top + 1, cursor)
 
-  def enter(): Unit = {
-    cursors.push(cursor)
-  }
+  def enter(): Unit = cursors.push(cursor)
 
-  def exit(): Unit = {
-    cursors.pop()
-  }
+  def exit(): Unit = cursors.pop()
 
-  def fallback(): Unit = {
-    if (cursors.nonEmpty) {
-      cursor = cursors.top
-    }
+  def fallback(): Unit = if (cursors.nonEmpty) { cursor = cursors.top }
+
+  def unexpectedToken(expected: lex.Tag, when: String): ParseError = {
+    val token = peekToken()
+    ParseError.UnexpectedToken(expected, token, when)
   }
 
   def invalidTerm(expected: String, when: String): ParseError = {
@@ -130,28 +97,20 @@ class Parser(var file: VfsNode) {
     ParseError.InvalidTerm(expected, token, when)
   }
 
-  def handlerError(error: ParseError): Unit = {
-    error match {
-      case ParseError.UnexpectedToken(expected, found, when) => {
-        file.report(
-          found,
-          vfs.ErrorKind.Error,
-          error,
-          s"expected `${expected.toString()}`, found `${found.tag.toString()}`, while ${when}",
-          3
-        )
-      }
-      case ParseError.InvalidTerm(expected, found, when) => {
-        file.report(
-          found,
-          vfs.ErrorKind.Error,
-          error,
-          s"expected a(n) ${expected}, while ${when}",
-          3
-        )
-      }
-      case _ => ()
-    }
+  def handlerError(error: ParseError): Unit = error match {
+    case ParseError.UnexpectedToken(expected, found, when) =>
+      // 使用新的错误报告系统
+      file.reportWithNewSystem(
+        found,
+        vfs.ErrorKind.Error,
+        error,
+        s"expected `${expected.toString()}`, found `${found.tag.toString()}`, while $when",
+        2
+      )
+    case ParseError.InvalidTerm(expected, found, when) =>
+      // 使用新的错误报告系统
+      file.reportWithNewSystem(found, vfs.ErrorKind.Error, error, s"expected a(n) $expected, while $when", 3)
+    case _ => ()
   }
 }
 
@@ -159,5 +118,15 @@ enum ParseError extends errors.FlurryError {
   case UnexpectedToken(expected: lex.Tag, found: Token, when: String)
   case InvalidTerm(expected: String, found: Token, when: String)
 
+  // for control flow
   case MeetRecordStart
+  case MeetPostIdSuccessor
+
+  override def errorMessage: String = this match {
+    case UnexpectedToken(expected, found, when) =>
+      s"expected `${expected.toString()}`, found `${found.tag.toString()}`, while $when"
+    case InvalidTerm(expected, found, when) => s"expected a(n) $expected, found `${found.tag.toString()}`"
+    case MeetRecordStart => "meet record start"
+    case MeetPostIdSuccessor => "meet post id successor"
+  }
 }

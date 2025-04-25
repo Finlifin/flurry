@@ -15,6 +15,23 @@ import scala.util.control.Breaks
 // param_rest_bind -> ... id: expr
 def tryParam(parser: Parser): ParseResult = withCtx(parser) {
   boundary {
+    if (parser.peek(lex.Tag.`^`)) boundary.break(tryAttribute(parser, tryParam))
+
+    if (parser.eatToken(lex.Tag.k_implicit)) {
+      val id = tryId(parser) match
+        case Right(Some(id)) => id
+        case _ => boundary.break(result(None))
+
+      if (!parser.eatToken(lex.Tag.`:`)) boundary
+        .break(result(parser.invalidTerm(":", "expected ':' after parameter name")))
+
+      val typ = tryExpr(parser) match
+        case Right(Some(t)) => t
+        case _ => boundary.break(result(parser.invalidTerm("type", "expected a type after ':'")))
+
+      boundary.break(result(AstNode2(Tag.param_implicit, parser.currentSpan(), id, typ)))
+    }
+
     if (parser.eatToken(lex.Tag.k_comptime)) {
       tryParam(parser) match
         case Right(Some(param)) => boundary.break(result(AstNode1(Tag.comptime_def, parser.currentSpan(), param)))
@@ -202,21 +219,17 @@ def tryDecreasesClause(parser: Parser): ParseResult = withCtx(parser) {
 }
 
 // Parse clauses: "where clause*"
-def tryClauses(parser: Parser): ParseResult = withCtx(parser) {
+def tryClauses(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_where)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.k_where)) boundary.break(result(None))
-
-    tryMulti(parser, None, "parsing clauses", lex.Tag.`,`, Rule(Tag.expr, tryClause)) match
+    tryMulti(parser, None, "parsing clauses", Rule(Tag.expr, tryClause)) match
       case Left(e) => boundary.break(result(e))
       case Right(nodes) => result(AstNodeN(Tag.clauses, parser.currentSpan(), nodes))
   }
 }
 
 // Parse return type: "-> expr"
-def tryReturnType(parser: Parser): ParseResult = withCtx(parser) {
+def tryReturnType(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`->`)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.`->`)) boundary.break(result(None))
-
     val expr = tryExpr(parser, ExprOption(noRecordCall = true)) match
       case Right(Some(e)) => e
       case _ => boundary.break(result(parser.invalidTerm("type", "expected a type after '->'")))
@@ -226,10 +239,8 @@ def tryReturnType(parser: Parser): ParseResult = withCtx(parser) {
 }
 
 // Parse gradual return type: "~> expr"
-def tryGradualReturnType(parser: Parser): ParseResult = withCtx(parser) {
+def tryGradualReturnType(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`~>`)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.`~>`)) boundary.break(result(None))
-
     val expr = tryExpr(parser, ExprOption(noRecordCall = true)) match
       case Right(Some(e)) => e
       case _ => boundary.break(result(parser.invalidTerm("type", "expected a type after '~>'")))
@@ -239,36 +250,23 @@ def tryGradualReturnType(parser: Parser): ParseResult = withCtx(parser) {
 }
 
 // fn_def -> fn id? ( param* ) ( return_type | gradual_return_type )? clauses? block
-def tryFnDef(parser: Parser): ParseResult = withCtx(parser) {
+def tryFnDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_fn)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.k_fn)) boundary.break(result(None))
-
     // Optional function name
     val name = tryId(parser) match
       case Right(Some(id)) => id
       case _ => AstNode0(Tag.invalid, parser.currentSpan())
-
-    // Parameter list
-    var kind: lex.Tag = lex.Tag.`(`
-
-    if (parser.peek(lex.Tag.`<`)) kind = lex.Tag.`<`
-    else if (parser.peek(lex.Tag.`(`)) kind = lex.Tag.`(`
-    else boundary.break(result(parser.invalidTerm("parameters", "expected '(' or '<' after function name")))
-
     var params: AstNode = AstNode0(Tag.invalid, parser.currentSpan())
-
-    if (kind == lex.Tag.`(`) {
-      tryMulti(parser, Some(lex.Tag.`(`), "parsing parameters", lex.Tag.`,`, Rule(Tag.param, tryParam)) match
-        case Right(nodes) => params = AstNodeN(Tag.params, parser.currentSpan(), nodes)
-        case Left(e) => boundary.break(result(e))
-    } else if (kind == lex.Tag.`<`) {
-      tryMulti(parser, Some(lex.Tag.`<`), "parsing type parameters", lex.Tag.`,`, Rule(Tag.param, tryParam)) match
-        case Right(nodes) => params = AstNodeN(Tag.params, parser.currentSpan(), nodes)
-        case Left(e) => boundary.break(result(e))
-    }
-
-    // Return type
     var returnType: AstNode = AstNode0(Tag.invalid, parser.currentSpan())
+
+    val kind = parser.peekToken().tag match
+      case lex.Tag.`(` => lex.Tag.`(`
+      case lex.Tag.`<` => lex.Tag.`<`
+      case _ => boundary.break(result(parser.invalidTerm("(", "expected '(' or '<' for parameter list")))
+
+    params = tryMulti(parser, Some(kind), "parsing function parameters", Rule(Tag.param, tryParam)) match
+      case Right(p) => AstNodeN(Tag.params, parser.currentSpan(), p)
+      case Left(e) => boundary.break(result(e))
 
     tryReturnType(parser) match
       case Right(Some(rt)) => returnType = rt
@@ -282,9 +280,10 @@ def tryFnDef(parser: Parser): ParseResult = withCtx(parser) {
       case _ => AstNode0(Tag.invalid, parser.currentSpan())
 
     // Function body
-    val stmtRules = Rule(Tag.statement, tryStatement)
+    val stmtRules = Rule(Tag.statement, tryStatement, lex.Tag.`;`)
     val body = tryBlock(parser) match
       case Right(Some(b)) => b
+      case Left(e) => boundary.break(result(e))
       case _ => boundary.break(result(parser.invalidTerm("block", "expected a function body")))
 
     result(AstNode5(Tag.fn_def, parser.currentSpan(), name, params, returnType, clauses, body))
@@ -317,10 +316,8 @@ def tryStructField(parser: Parser): ParseResult = withCtx(parser) {
 }
 
 // struct_def -> struct id? clauses? block(struct_field*)
-def tryStructDef(parser: Parser): ParseResult = withCtx(parser) {
+def tryStructDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_struct)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.k_struct)) boundary.break(result(None))
-
     // Optional struct name
     val name = tryId(parser) match
       case Right(Some(id)) => id
@@ -333,12 +330,13 @@ def tryStructDef(parser: Parser): ParseResult = withCtx(parser) {
 
     // Struct body - fields
     val fieldRules = List(
+      Rule(Tag.property, tryProperty),
       Rule(Tag.struct_field, tryStructField),
-      Rule(Tag.definition, tryDefinition),
-      Rule(Tag.statement, tryStatement)
+      Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
+      Rule(Tag.statement, tryStatement, lex.Tag.`;`)
     )
 
-    tryMulti(parser, Some(lex.Tag.`{`), "parsing struct fields", lex.Tag.`,`, fieldRules*) match
+    tryMulti(parser, Some(lex.Tag.`{`), "parsing struct fields", fieldRules*) match
       case Right(fields) =>
         val structDefBody = AstNodeN(Tag.struct_def_body, parser.currentSpan(), fields)
         result(AstNode3(Tag.struct_def, parser.currentSpan(), name, clauses, structDefBody))
@@ -355,13 +353,7 @@ def tryEnumVariantWithStruct(parser: Parser): ParseResult = withCtx(parser) {
       case Right(Some(id)) => id
       case _ => boundary.break(result(None))
 
-    tryMulti(
-      parser,
-      Some(lex.Tag.`{`),
-      "parsing struct fields",
-      lex.Tag.`;`,
-      Rule(Tag.struct_field, tryStructField)
-    ) match
+    tryMulti(parser, Some(lex.Tag.`{`), "parsing struct fields", Rule(Tag.struct_field, tryStructField)) match
       case Right(fields) => result(AstNode2(
           Tag.enum_variant_with_struct,
           parser.currentSpan(),
@@ -381,7 +373,7 @@ def tryEnumVariantWithTuple(parser: Parser): ParseResult = withCtx(parser) {
       case Right(Some(id)) => id
       case _ => boundary.break(result(None))
 
-    tryMulti(parser, Some(lex.Tag.`(`), "parsing tuple types", lex.Tag.`,`, Rule(Tag.expr, tryExpr)) match
+    tryMulti(parser, Some(lex.Tag.`(`), "parsing tuple types", Rule(Tag.expr, tryExpr)) match
       case Right(types) => result(AstNode2(
           Tag.enum_variant_with_tuple,
           parser.currentSpan(),
@@ -422,13 +414,7 @@ def tryEnumVariantWithSubEnum(parser: Parser): ParseResult = withCtx(parser) {
 
     parser.eatToken(lex.Tag.`.`)
 
-    tryMulti(
-      parser,
-      Some(lex.Tag.`{`),
-      "parsing sub-enum variants",
-      lex.Tag.`,`,
-      Rule(Tag.enum_variant, tryEnumVariant)
-    ) match
+    tryMulti(parser, Some(lex.Tag.`{`), "parsing sub-enum variants", Rule(Tag.enum_variant, tryEnumVariant)) match
       case Right(variants) => result(AstNode2(
           Tag.enum_variant_with_sub_enum,
           parser.currentSpan(),
@@ -467,10 +453,8 @@ def tryEnumVariant(parser: Parser): ParseResult = withCtx(parser) {
 }
 
 // enum_def -> enum id? clauses? block(enum_variant*)
-def tryEnumDef(parser: Parser): ParseResult = withCtx(parser) {
+def tryEnumDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_enum)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.k_enum)) boundary.break(result(None))
-
     // Optional enum name
     val name = tryId(parser) match
       case Right(Some(id)) => id
@@ -483,12 +467,13 @@ def tryEnumDef(parser: Parser): ParseResult = withCtx(parser) {
 
     // Enum body - variants
     val variantRules = List(
+      Rule(Tag.property, tryProperty),
       Rule(Tag.enum_variant, tryEnumVariant),
-      Rule(Tag.definition, tryDefinition),
-      Rule(Tag.statement, tryStatement)
+      Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
+      Rule(Tag.statement, tryStatement, lex.Tag.`;`)
     )
 
-    tryMulti(parser, Some(lex.Tag.`{`), "parsing enum variants", lex.Tag.`,`, variantRules*) match
+    tryMulti(parser, Some(lex.Tag.`{`), "parsing enum variants", variantRules*) match
       case Right(variants) =>
         val enumDefBody = AstNodeN(Tag.enum_def_body, parser.currentSpan(), variants)
         result(AstNode3(Tag.enum_def, parser.currentSpan(), name, clauses, enumDefBody))
@@ -514,10 +499,8 @@ def tryUnionVariant(parser: Parser): ParseResult = withCtx(parser) {
 }
 
 // union_def -> union id? clauses? block(union_variant*)
-def tryUnionDef(parser: Parser): ParseResult = withCtx(parser) {
+def tryUnionDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_union)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.k_union)) boundary.break(result(None))
-
     // Optional union name
     val name = tryId(parser) match
       case Right(Some(id)) => id
@@ -530,12 +513,13 @@ def tryUnionDef(parser: Parser): ParseResult = withCtx(parser) {
 
     // Union body - variants
     val variantRules = List(
+      Rule(Tag.property, tryProperty),
       Rule(Tag.union_variant, tryUnionVariant),
-      Rule(Tag.definition, tryDefinition),
-      Rule(Tag.statement, tryStatement)
+      Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
+      Rule(Tag.statement, tryStatement, lex.Tag.`;`)
     )
 
-    tryMulti(parser, Some(lex.Tag.`{`), "parsing union variants", lex.Tag.`,`, variantRules*) match
+    tryMulti(parser, Some(lex.Tag.`{`), "parsing union variants", variantRules*) match
       case Right(variants) =>
         val unionDefBody = AstNodeN(Tag.union_def_body, parser.currentSpan(), variants)
         result(AstNode3(Tag.union_def, parser.currentSpan(), name, clauses, unionDefBody))
@@ -562,10 +546,14 @@ def tryImplDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_imp
       case Right(Some(c)) => c
       case _ => AstNode0(Tag.invalid, parser.currentSpan())
 
-    val stmtRules = List(Rule(Tag.definition, tryDefinition), Rule(Tag.statement, tryStatement))
+    val stmtRules = List(
+      Rule(Tag.property, tryProperty),
+      Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
+      Rule(Tag.statement, tryStatement, lex.Tag.`;`)
+    )
 
     println("impl_def: " + parser.peekToken().tag)
-    val body = tryMulti(parser, Some(lex.Tag.`{`), "parsing impl body", lex.Tag.`;`, stmtRules*) match
+    val body = tryMulti(parser, Some(lex.Tag.`{`), "parsing impl body", stmtRules*) match
       case Right(list) => list
       case Left(e) => boundary.break(result(e))
 
@@ -581,11 +569,9 @@ def tryImplDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_imp
 }
 
 // derive -> derive expr* for expr clauses?
-def tryDerive(parser: Parser): ParseResult = withCtx(parser) {
+def tryDerive(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_derive)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.k_derive)) boundary.break(result(None))
-
-    tryMulti(parser, None, "parsing derive expressions", lex.Tag.`,`, Rule(Tag.expr, tryExpr)) match
+    tryMulti(parser, None, "parsing derive expressions", Rule(Tag.expr, tryExpr)) match
       case Right(exprs) =>
         var forExpr: AstNode = AstNode0(Tag.invalid, parser.currentSpan())
         if (parser.eatToken(lex.Tag.k_for)) {
@@ -608,10 +594,8 @@ def tryDerive(parser: Parser): ParseResult = withCtx(parser) {
 }
 
 // extend -> extend expr (for expr)? clauses? block
-def tryExtendDef(parser: Parser): ParseResult = withCtx(parser) {
+def tryExtendDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_extend)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.k_extend)) boundary.break(result(None))
-
     val expr = tryExpr(parser, ExprOption(noRecordCall = true)) match
       case Right(Some(e)) => e
       case _ => boundary.break(result(parser.invalidTerm("expression", "expected an expression after 'extend'")))
@@ -628,7 +612,11 @@ def tryExtendDef(parser: Parser): ParseResult = withCtx(parser) {
       case Right(Some(c)) => c
       case _ => AstNode0(Tag.invalid, parser.currentSpan())
 
-    val stmtRules = List(Rule(Tag.definition, tryDefinition), Rule(Tag.statement, tryStatement))
+    val stmtRules = List(
+      Rule(Tag.property, tryProperty),
+      Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
+      Rule(Tag.statement, tryStatement, lex.Tag.`;`)
+    )
 
     val body = tryBlock(parser) match
       case Right(Some(b)) => b
@@ -638,19 +626,79 @@ def tryExtendDef(parser: Parser): ParseResult = withCtx(parser) {
   }
 }
 
-def tryModuleDef(parser: Parser): ParseResult = withCtx(parser) {
+def tryModuleDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_mod)) {
   boundary {
-    if (!parser.eatToken(lex.Tag.k_mod)) boundary.break(result(None))
-
     val id = tryId(parser) match
       case Right(Some(id)) => id
       case _ => boundary.break(result(parser.invalidTerm("identifier", "expected a module name after 'mod'")))
 
-    val rules = List(Rule(Tag.definition, tryDefinition), Rule(Tag.statement, tryStatement))
+    val rules = List(
+      Rule(Tag.property, tryProperty),
+      Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
+      Rule(Tag.statement, tryStatement)
+    )
 
     tryBlock(parser) match
       case Right(Some(block)) => result(AstNode2(Tag.mod, parser.currentSpan(), id, block))
       case _ => result(AstNode1(Tag.mod_file, parser.currentSpan(), id))
+  }
+}
+
+// typealias -> typealias id(<id | param*>)? = expr
+def tryTypeAlias(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_typealias)) {
+  boundary {
+    val id = tryId(parser) match
+      case Right(Some(id)) => id
+      case _ => boundary.break(result(parser.invalidTerm("identifier", "expected a type alias name after 'typealias'")))
+
+    var params: AstNode = AstNode0(Tag.invalid, parser.currentSpan())
+    params = tryMulti(
+      parser,
+      Some(lex.Tag.`<`),
+      "parsing type alias parameters",
+      Rule(Tag.id, tryId),
+      Rule(Tag.param, tryParam)
+    ) match
+      case Right(p) => AstNodeN(Tag.params, parser.currentSpan(), p)
+      case Left(e) => boundary.break(result(e))
+
+    if (!parser.eatToken(lex.Tag.`=`)) boundary
+      .break(Left(ParseError.UnexpectedToken(lex.Tag.`=`, parser.peekToken(), "expected '=' after type alias name")))
+
+    val expr = tryExpr(parser) match
+      case Right(Some(e)) => e
+      case _ => boundary.break(result(parser.invalidTerm("expression", "expected an expression after '='")))
+
+    result(AstNode3(Tag.typealias, parser.currentSpan(), id, params, expr))
+  }
+}
+
+// newtype -> newtype id(<id | param*>)? = expr
+def tryNewType(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_newtype)) {
+  boundary {
+    val id = tryId(parser) match
+      case Right(Some(id)) => id
+      case _ => boundary.break(result(parser.invalidTerm("identifier", "expected a newtype name after 'newtype'")))
+
+    var params: AstNode = AstNode0(Tag.invalid, parser.currentSpan())
+    params = tryMulti(
+      parser,
+      Some(lex.Tag.`<`),
+      "parsing newtype parameters",
+      Rule(Tag.id, tryId),
+      Rule(Tag.param, tryParam)
+    ) match
+      case Right(p) => AstNodeN(Tag.params, parser.currentSpan(), p)
+      case Left(e) => boundary.break(result(e))
+
+    if (!parser.eatToken(lex.Tag.`=`)) boundary
+      .break(Left(ParseError.UnexpectedToken(lex.Tag.`=`, parser.peekToken(), "expected '=' after newtype name")))
+
+    val expr = tryExpr(parser) match
+      case Right(Some(e)) => e
+      case _ => boundary.break(result(parser.invalidTerm("expression", "expected an expression after '='")))
+
+    result(AstNode3(Tag.newtype, parser.currentSpan(), id, params, expr))
   }
 }
 
@@ -666,6 +714,10 @@ def tryDefinition(parser: Parser): ParseResult = withCtx(parser) {
     case lex.Tag.k_impl => tryImplDef(parser)
     case lex.Tag.k_extend => tryExtendDef(parser)
     case lex.Tag.k_mod => tryModuleDef(parser)
+    case lex.Tag.k_typealias => tryTypeAlias(parser)
+    case lex.Tag.k_newtype => tryNewType(parser)
+
+    case lex.Tag.`^` => tryAttribute(parser, tryDefinition)
 
     case lex.Tag.k_inline => tryPrefixTerm(parser, Tag.inline_def, lex.Tag.k_inline, tryDefinition)
     case lex.Tag.k_pub => tryPrefixTerm(parser, Tag.pub_def, lex.Tag.k_pub, tryDefinition)

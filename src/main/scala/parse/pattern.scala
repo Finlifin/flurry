@@ -3,14 +3,15 @@ package parse
 import scala.util.boundary
 import scala.util.chaining._
 import scala.util.control.Breaks
+import java.util.regex.Pattern
 
-case class PatternOption(noRecordCall: Boolean = false)
+case class PatternOption(noRecordCall: Boolean = false, precedence: Int = 0)
 
 def tryPattern(parser: Parser): ParseResult = withCtx(parser)(tryPattern(parser, PatternOption()))
 
 def tryPattern(parser: Parser, opt: PatternOption): ParseResult = withCtx(parser) {
   parser.enter()
-  try tryPatternPratt(parser, 0, opt)
+  try tryPatternPratt(parser, opt.precedence, opt)
   finally parser.exit()
 }
 
@@ -26,7 +27,7 @@ object PatternOpTable {
     lex.Tag.`?` -> OpInfo(40, Tag.pattern_option_some),
     lex.Tag.`!` -> OpInfo(40, Tag.pattern_error_ok),
     lex.Tag.`(` -> OpInfo(80, Tag.pattern_call),
-    lex.Tag.`{` -> OpInfo(80, Tag.pattern_record_call),
+    lex.Tag.`{` -> OpInfo(80, Tag.pattern_object_call),
     lex.Tag.`<` -> OpInfo(80, Tag.pattern_diamond_call),
     lex.Tag.`.` -> OpInfo(90, Tag.select)
   )
@@ -98,7 +99,17 @@ def tryPatternPratt(parser: Parser, minPrec: Int, opt: PatternOption): ParseResu
   */
 def tryPrefixPattern(parser: Parser): ParseResult = withCtx(parser) {
   boundary {
-    // Try literal first
+    if (parser.peek(lex.Tag.int, lex.Tag.id) && parser.srcContentT(parser.getToken(parser.cursor + 1)) == "0") {
+      if (parser.srcContentT(parser.getToken(parser.cursor + 2)).charAt(0) == 'x') {
+        boundary.break(tryBitVecPattern(parser, 'x'))
+      } else if (parser.srcContentT(parser.getToken(parser.cursor + 2)).charAt(0) == 'o') {
+        boundary.break(tryBitVecPattern(parser, 'o'))
+      } else if (parser.srcContentT(parser.getToken(parser.cursor + 2)).charAt(0) == 'b') {
+        boundary.break(tryBitVecPattern(parser, 'b'))
+      }
+    }
+
+    // Try literal
     tryLiteral(parser) match
       case Right(Some(value)) => boundary.break(result(value))
       case _ => ()
@@ -121,9 +132,22 @@ def tryPrefixPattern(parser: Parser): ParseResult = withCtx(parser) {
       case lex.Tag.`{` => tryRecordPattern(parser)
       case lex.Tag.`<` => tryPatternFromExpr(parser)
 
-      case lex.Tag.k_async => tryPrefixTerm(parser, Tag.pattern_async, lex.Tag.k_async, tryPattern)
-      case lex.Tag.k_not => tryPrefixTerm(parser, Tag.pattern_not, lex.Tag.k_not, tryPattern)
+      case lex.Tag.`^` => tryAttribute(parser, tryPattern)
+
+      case lex.Tag.k_async => tryPrefixTerm(
+          parser,
+          Tag.pattern_async,
+          lex.Tag.k_async,
+          parser => tryPattern(parser, PatternOption(precedence = 0))
+        )
+      case lex.Tag.k_not => tryPrefixTerm(
+          parser,
+          Tag.pattern_not,
+          lex.Tag.k_not,
+          parser => tryPattern(parser, PatternOption(precedence = 0))
+        )
       case lex.Tag.`'` => tryPrefixTerm(parser, Tag.pattern_type_bind, lex.Tag.`'`, tryId)
+
       case _ => result(None)
     }
   }
@@ -149,13 +173,7 @@ def tryPostfixPattern(parser: Parser, tag: lex.Tag, left: AstNode, minPrec: Int,
     tag match {
       case lex.Tag.`(` =>
         // Pattern call
-        val nodes = tryMulti(
-          parser,
-          Some(lex.Tag.`(`),
-          "parsing a pattern call",
-          lex.Tag.`,`,
-          Rule(Tag.pattern, tryPattern)
-        ) match
+        val nodes = tryMulti(parser, Some(lex.Tag.`(`), "parsing a pattern call", Rule(Tag.pattern, tryPattern)) match
           case Right(nodes) => nodes
           case Left(e) => boundary.break(result(e))
 
@@ -163,15 +181,10 @@ def tryPostfixPattern(parser: Parser, tag: lex.Tag, left: AstNode, minPrec: Int,
 
       case lex.Tag.`<` =>
         // Diamond pattern call
-        val nodes = tryMulti(
-          parser,
-          Some(lex.Tag.`<`),
-          "parsing a diamond pattern call",
-          lex.Tag.`,`,
-          Rule(Tag.pattern, tryPattern)
-        ) match
-          case Right(nodes) => nodes
-          case Left(e) => boundary.break(result(e))
+        val nodes =
+          tryMulti(parser, Some(lex.Tag.`<`), "parsing a diamond pattern call", Rule(Tag.pattern, tryPattern)) match
+            case Right(nodes) => nodes
+            case Left(e) => boundary.break(result(e))
 
         res = Some(AstNodeL(Tag.pattern_diamond_call, parser.currentSpan(), left, nodes))
 
@@ -203,11 +216,10 @@ def tryPostfixPattern(parser: Parser, tag: lex.Tag, left: AstNode, minPrec: Int,
           parser,
           Some(lex.Tag.`{`),
           "parsing a record call pattern",
-          lex.Tag.`,`,
           Rule(Tag.pattern, tryPropertyPattern),
           Rule(Tag.id, tryId)
         ) match
-          case Right(nodes) => res = Some(AstNodeL(Tag.pattern_record_call, parser.currentSpan(), left, nodes))
+          case Right(nodes) => res = Some(AstNodeL(Tag.pattern_object_call, parser.currentSpan(), left, nodes))
           case Left(e) =>
             // parser.fallback();
             boundary.break(Left(ParseError.MeetRecordStart))
@@ -254,6 +266,10 @@ def tryPostfixPattern(parser: Parser, tag: lex.Tag, left: AstNode, minPrec: Int,
         parser.eatTokens(1)
         res = Some(AstNode1(Tag.pattern_option_some, parser.currentSpan(), left))
 
+      case lex.Tag.`!` =>
+        // Option some pattern
+        parser.eatTokens(1)
+        res = Some(AstNode1(Tag.pattern_error_ok, parser.currentSpan(), left))
       case _ => boundary.break(result(None))
     }
 
@@ -348,7 +364,6 @@ def tryRecordPattern(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag
       parser,
       Some(lex.Tag.`{`),
       "parsing a record pattern",
-      lex.Tag.`,`,
       Rule(Tag.property_pattern, tryPropertyPattern),
       Rule(Tag.id, tryId)
     ) match
@@ -367,10 +382,9 @@ def tryRecordPattern(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag
   */
 def tryListPattern(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`[`), true) {
   boundary {
-    val nodes =
-      tryMulti(parser, Some(lex.Tag.`[`), "parsing a list pattern", lex.Tag.`,`, Rule(Tag.pattern, tryPattern)) match
-        case Right(nodes) => nodes
-        case Left(e) => boundary.break(result(e))
+    val nodes = tryMulti(parser, Some(lex.Tag.`[`), "parsing a list pattern", Rule(Tag.pattern, tryPattern)) match
+      case Right(nodes) => nodes
+      case Left(e) => boundary.break(result(e))
 
     result(AstNodeN(Tag.pattern_list, parser.currentSpan(), nodes))
   }
@@ -384,12 +398,82 @@ def tryListPattern(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`
   */
 def tryTuplePattern(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`(`), true) {
   boundary {
-    val nodes =
-      tryMulti(parser, Some(lex.Tag.`(`), "parsing a tuple pattern", lex.Tag.`,`, Rule(Tag.pattern, tryPattern)) match
-        case Right(nodes) => nodes
-        case Left(e) => boundary.break(result(e))
+    val nodes = tryMulti(parser, Some(lex.Tag.`(`), "parsing a tuple pattern", Rule(Tag.pattern, tryPattern)) match
+      case Right(nodes) => nodes
+      case Left(e) => boundary.break(result(e))
 
     result(AstNodeN(Tag.pattern_tuple, parser.currentSpan(), nodes))
+  }
+}
+
+// id: pattern
+def tryIdExprPair(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.id), true) {
+  boundary {
+    if (!parser.peek(lex.Tag.id, lex.Tag.`:`)) { boundary.break(result(None)) }
+
+    val id = tryId(parser) match
+      case Right(Some(node)) => node
+      case Left(e) => boundary.break(result(e))
+      case _ => boundary.break(result(parser.invalidPattern("expected an identifier")))
+
+    if (!parser.eatToken(lex.Tag.`:`)) {
+      boundary.break(result(parser.invalidPattern("expected `:` after identifier")))
+    }
+
+    val pattern = tryExpr(parser) match
+      case Right(Some(node)) => node
+      case Left(e) => boundary.break(result(e))
+      case _ => boundary.break(result(parser.invalidPattern("expected a pattern")))
+
+    result(AstNode2(Tag.pair, parser.currentSpan(), id, pattern))
+  }
+}
+
+def tryIdExprPairOrExpr(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`(`)) {
+  boundary {
+    val node = tryIdExprPair(parser) match
+      case Right(Some(node)) => result(node)
+      case Left(e) => boundary.break(result(e))
+      case _ =>
+        // parser.fallback();
+        tryExpr(parser) match
+          case Right(Some(node)) => result(node)
+          case Left(e) => boundary.break(result(e))
+          case _ => boundary.break(result(None))
+
+    if (!parser.eatToken(lex.Tag.`)`)) { boundary.break(result(parser.invalidPattern("expected `)` after pattern"))) }
+    node
+  }
+}
+
+def tryInt(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.int), true)(tryLiteral(parser))
+
+// pattern_bitvec_0x -> 0x (int | id | ( id : expr | expr ))*
+def tryBitVecPattern(parser: Parser, kind: Char): ParseResult = withCtx(parser) {
+  boundary {
+    val tag = kind match
+      case 'x' => Tag.pattern_bitvec_0x
+      case 'o' => Tag.pattern_bitvec_0o
+      case 'b' => Tag.pattern_bitvec_0b
+      case _ => throw new IllegalArgumentException("Invalid kind for bit vector pattern")
+    if (
+      parser.peek(lex.Tag.int, lex.Tag.id) && parser.srcContentT(parser.getToken(parser.cursor + 1)) == "0" &&
+      parser.srcContentT(parser.getToken(parser.cursor + 2)).charAt(0) == kind
+    ) {
+      parser.eatTokens(1)
+
+      val nodes = tryMulti(
+        parser,
+        None,
+        s"parsing a 0$kind bit vector pattern",
+        Rule(Tag.int, tryInt, lex.Tag.invalid),
+        Rule(Tag.id, tryId, lex.Tag.invalid),
+        Rule(Tag.pair, tryIdExprPairOrExpr, lex.Tag.invalid)
+      ) match
+        case Right(nodes) => nodes
+        case Left(e) => boundary.break(result(e))
+      result(AstNodeN(tag, parser.currentSpan(), nodes))
+    } else { result(None) }
   }
 }
 

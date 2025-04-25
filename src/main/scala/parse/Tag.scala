@@ -116,18 +116,18 @@ enum Tag {
   // call -> expr ( arg* )
   // curry_call -> expr ' ( arg* )
   // diamond_call -> expr <arg*>
-  // record_call -> expr { (... expr | property | expr)* }
+  // object_call -> expr { (... expr | property | expr)* }
   // index_call -> expr [ expr ]
   case call
   case curry_call
   case diamond_call
-  case record_call
+  case object_call
   case index_call
 
   case macro_call
   case prefix_macro_call
 
-  case closure
+  case lambda
 
   case self_val // Renamed 'self' to 'self_val' as 'self' is a keyword in Scala
   case Self_type // Renamed 'Self' to 'Self_type' for clarity and to avoid potential conflicts
@@ -220,8 +220,8 @@ enum Tag {
   // pattern_diamond_call -> pattern < (id : pattern | pattern)* >
   case pattern_diamond_call
 
-  // pattern_record_call -> pattern { (id | id: pattern)* }
-  case pattern_record_call
+  // pattern_object_call -> pattern { (id | id: pattern)* }
+  case pattern_object_call
 
   // pattern_as_bind -> pattern as id
   case pattern_as_bind
@@ -381,6 +381,7 @@ enum Tag {
   // param_itself -> itself
   // param_itself_ref -> *itself
   // param_rest_bind -> ... id: expr
+  // param_implicit -> implicit id: expr
   case param_optional
   case param_typed
   case param_trait_bound
@@ -391,6 +392,7 @@ enum Tag {
   case param_itself
   case param_itself_ref
   case param_rest_bind
+  case param_implicit
   case params
 
   // return_type -> -> expr
@@ -446,9 +448,11 @@ enum Tag {
   // unsafe term
   case unsafe_def
   // ^expr term
-  case attr_def
+  case attribute
   // property -> .id expr
   case property
+  // property_assign -> .id = expr
+  case property_assign
   // inline term
   case inline_def
   // pure term
@@ -458,6 +462,8 @@ enum Tag {
 
   // expand_items -> ... expr
   case expand_items
+  // pair -> id: term
+  case pair
 
   case file_scope
 

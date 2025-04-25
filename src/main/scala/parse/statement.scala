@@ -28,6 +28,9 @@ def tryStatement(parser: Parser): ParseResult = withCtx(parser) {
 
     case lex.Tag.k_use => tryUseStatement(parser)
 
+    // BUG: 由于definition总是比statement优先级高，所以attribute总是会进入definition
+    case lex.Tag.`^` => tryAttribute(parser, tryStatement)
+
     case _ => tryExprStatement(parser)
 }
 
@@ -36,9 +39,8 @@ def tryFileScope(parser: Parser): ParseResult = withCtx(parser) {
     parser,
     None,
     "parsing a file scope",
-    lex.Tag.`;`,
-    Rule(Tag.definition, tryDefinition),
-    Rule(Tag.statement, tryStatement)
+    Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
+    Rule(Tag.statement, tryStatement, lex.Tag.`;`)
   ) match
     case Left(err) => result(err)
     case Right(nodes) => result(AstNodeN(Tag.file_scope, parser.currentSpan(), nodes))
@@ -61,8 +63,8 @@ def tryBlock(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`{`), t
     parser,
     Some(lex.Tag.`{`),
     "parsing a block of statements",
-    lex.Tag.`;`,
-    Rule(Tag.statement, tryStatement)
+    Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
+    Rule(Tag.statement, tryStatement, lex.Tag.`;`)
   ) match
     case Left(err) => result(err)
     case Right(nodes) => result(AstNodeN(Tag.block, parser.currentSpan(), nodes))
@@ -192,22 +194,17 @@ def tryConditionBranch(parser: Parser): ParseResult = withCtx(parser) {
 // when -> when { condition_branch* }
 def tryWhenStatement(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_when)) {
   boundary[ParseResult] {
-    val branches = tryMulti(
-      parser,
-      Some(lex.Tag.`{`),
-      "parsing when branches",
-      lex.Tag.`,`,
-      Rule(Tag.condition_branch, tryConditionBranch)
-    ) match
-      case Right(nodes) => nodes
-      case Left(error) => boundary.break(result(error))
+    val branches =
+      tryMulti(parser, Some(lex.Tag.`{`), "parsing when branches", Rule(Tag.condition_branch, tryConditionBranch)) match
+        case Right(nodes) => nodes
+        case Left(error) => boundary.break(result(error))
 
     result(AstNodeN(Tag.when_statement, parser.currentSpan(), branches))
   }
 }
 
-// if_is_match -> if expr is { branch* }
-// if_is_pattern -> if expr is pattern block (else (if | block))?
+// if_is_match -> if expr is do { branch* }
+// if_is_pattern -> if expr is pattern do block (else (if | block))?
 // if -> if expr block else?
 def tryIfStatement(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_if)) {
   boundary[ParseResult] {
@@ -216,26 +213,28 @@ def tryIfStatement(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k
       case Left(error) => boundary.break(result(error))
       case _ => boundary.break(result(parser.invalidTerm("expression", "parsing condition expression in if statement")))
 
-    // 处理 if expr is { branch* } 情况
-    if (parser.peek(lex.Tag.k_is, lex.Tag.`{`)) {
-      parser.eatTokens(1) // 消费 is 关键字
+    // 处理 if expr is do { branch* } 情况
+    if (parser.peek(lex.Tag.k_is, lex.Tag.k_do)) {
+      parser.eatTokens(2)
 
-      val branches =
-        tryMulti(parser, Some(lex.Tag.`{`), "parsing pattern branches", lex.Tag.`,`, Rule(Tag.branch, tryBranch)) match
-          case Right(nodes) => nodes
-          case Left(error) => boundary.break(result(error))
+      val branches = tryMulti(parser, Some(lex.Tag.`{`), "parsing pattern branches", Rule(Tag.branch, tryBranch)) match
+        case Right(nodes) => nodes
+        case Left(error) => boundary.break(result(error))
 
       boundary.break(result(AstNodeL(Tag.if_is_match, parser.currentSpan(), expr, branches)))
     }
 
-    // 处理 if expr is pattern 情况
+    // 处理 if expr is pattern do 情况
     var pattern: AstNode = AstNode0(Tag.invalid, parser.currentSpan())
-    if (parser.eatToken(lex.Tag.k_is)) {
+    if (parser.eatToken(lex.Tag.k_is))
       pattern = tryPattern(parser) match
         case Right(Some(node)) => node
         case Left(error) => boundary.break(result(error))
         case _ => boundary.break(result(parser.invalidTerm("pattern", "missing pattern after `is` in if statement")))
-    }
+
+      if (!parser.eatToken(lex.Tag.k_do)) {
+        boundary.break(result(parser.invalidTerm("do", "missing `do` keyword after the pattern")))
+      }
 
     // 解析块
     val block = tryBlock(parser) match
@@ -421,15 +420,10 @@ def tryPostfixPath(parser: Parser, tag: lex.Tag, left: AstNode): ParseResult = b
       // 选择多个
       else if (parser.peek(lex.Tag.`.`, lex.Tag.`{`)) {
         parser.eatTokens(1)
-        val nodes = tryMulti(
-          parser,
-          Some(lex.Tag.`{`),
-          "parsing multiple module paths",
-          lex.Tag.`,`,
-          Rule(Tag.mod_path, tryPath)
-        ) match
-          case Right(nodes) => nodes
-          case Left(e) => boundary.break(result(e))
+        val nodes =
+          tryMulti(parser, Some(lex.Tag.`{`), "parsing multiple module paths", Rule(Tag.mod_path, tryPath)) match
+            case Right(nodes) => nodes
+            case Left(e) => boundary.break(result(e))
 
         res = Some(AstNodeL(Tag.path_select_multi, parser.currentSpan(), left, nodes))
       }
@@ -514,8 +508,8 @@ def tryForLoop(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_for
   }
 }
 
-// while_is_match -> while label? expr is { branch* }
-// while_is_pattern -> while label? expr is pattern block
+// while_is_match -> while label? expr is do { branch* }
+// while_is_pattern -> while label? expr is pattern do block
 // while_loop -> while label? expr block
 def tryWhileLoop(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_while)) {
   boundary[ParseResult] {
@@ -534,33 +528,34 @@ def tryWhileLoop(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_w
       case Left(e) => boundary.break(result(e))
       case _ => boundary.break(result(parser.invalidTerm("expression", "expected a condition expression for while")))
 
-    // 如果有 is 关键字，处理模式匹配情况
+    if (parser.peek(lex.Tag.k_is, lex.Tag.k_do)) {
+      parser.eatTokens(2)
+
+      // while_is_match
+      val branches = tryMulti(parser, Some(lex.Tag.`{`), "parsing pattern branches", Rule(Tag.branch, tryBranch)) match
+        case Right(nodes) => nodes
+        case Left(e) => boundary.break(result(e))
+
+      boundary.break(result(AstNode3(
+        Tag.while_is_match,
+        parser.currentSpan(),
+        label,
+        expr,
+        AstNodeN(Tag.branches, parser.currentSpan(), branches)
+      )))
+    }
+
+    //  while_is_pattern do
     if (parser.eatToken(lex.Tag.k_is)) {
       val pattern = tryPattern(parser, PatternOption(noRecordCall = true)) match
-        case Right(Some(node)) => node
+        case Right(Some(node)) =>
+          if (!parser.eatToken(lex.Tag.k_do)) {
+            boundary.break(result(parser.invalidTerm("do", "expected `do` keyword after the pattern")))
+          }
+          node
         case Left(e) => boundary.break(result(e))
-        case _ =>
-          // 如果没有直接的模式，则是 while_is_match 形式
-          // 解析匹配分支
-          val branches = tryMulti(
-            parser,
-            Some(lex.Tag.`{`),
-            "parsing pattern branches",
-            lex.Tag.`,`,
-            Rule(Tag.branch, tryBranch)
-          ) match
-            case Right(nodes) => nodes
-            case Left(e) => boundary.break(result(e))
-
-          boundary.break(result(AstNode3(
-            Tag.while_is_match,
-            parser.currentSpan(),
-            label,
-            expr,
-            AstNodeN(Tag.branches, parser.currentSpan(), branches)
-          )))
-
-      // 处理 while_is_pattern 形式
+        case Right(None) => boundary
+            .break(result(parser.invalidTerm("pattern", "expected a pattern after `is` in while statement")))
 
       // 解析循环主体块
       val block = tryBlock(parser) match
@@ -573,8 +568,6 @@ def tryWhileLoop(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_w
     }
 
     // 处理普通 while 循环
-
-    // 解析循环主体块
     val block = tryBlock(parser) match
       case Right(Some(node)) => node
       case Left(e) => boundary.break(result(e))

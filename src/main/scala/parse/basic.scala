@@ -18,10 +18,13 @@ inline def withCtx[T](parser: Parser, prefix: Option[lex.Tag] = None, dontEat: B
 ): ParseResult = boundary {
   parser.enter()
   try {
-    if (!dontEat) prefix match
-      case Some(tag) => if (!parser.eatToken(tag)) boundary.break(result(None))
-
+    prefix match {
+      case Some(tag) =>
+        if (!dontEat) { if (!parser.eatToken(tag)) { boundary.break(result(None)) } }
+        else { if (!parser.peek(tag)) { boundary.break(result(None)) } }
       case None => ()
+    }
+
     block
   } finally parser.exit()
 }
@@ -88,31 +91,61 @@ def tryProperty(parser: Parser): ParseResult = withCtx(parser) {
   } else { result(None) }
 }
 
-case class Rule(tag: Tag, parser_fn: Parser => ParseResult)
+def tryPropertyAssign(parser: Parser): ParseResult = withCtx(parser) {
+  if (parser.peek(lex.Tag.`.`, lex.Tag.id, lex.Tag.`=`)) {
+    parser.eatTokens(1)
+    val id = tryId(parser) match {
+      case Right(Some(node)) => node
+      case _ => throw new IllegalArgumentException("Invalid property assignment")
+    }
+    if (!parser.eatToken(lex.Tag.`=`)) { result(parser.invalidTerm("an expression", "property assignment")) }
+    else {
+      tryExpr(parser) match
+        case Right(Some(expr)) => result(AstNode2(Tag.property_assign, parser.currentSpan(), id, expr))
+        case _ =>
+          parser.fallback()
+          result(None)
+    }
+  } else { result(None) }
+}
+
+// ^expr expr
+def tryAttribute(parser: Parser, followRule: Parser => ParseResult): ParseResult = withCtx(parser, Some(lex.Tag.`^`)) {
+  boundary {
+    val attr = tryExpr(parser, ExprOption(precedence = 90)) match
+      case Right(Some(node)) => node
+      case Left(e) => boundary.break(result(e))
+      case _ => boundary.break(result(None))
+
+    val term = followRule(parser) match
+      case Right(Some(node)) => node
+      case Left(e) => boundary.break(result(e))
+      case _ => boundary.break(result(None))
+
+    result(AstNode2(Tag.attribute, parser.currentSpan(), attr, term))
+  }
+}
+
+case class Rule(tag: Tag, parser_fn: Parser => ParseResult, delimiter: lex.Tag = lex.Tag.`,`)
 
 def tryPrefixTerm(parser: Parser, tag: Tag, prefixToken: lex.Tag, followRule: Parser => ParseResult): ParseResult =
   withCtx(parser, Some(prefixToken)) {
     followRule(parser) match
       case Right(Some(node)) => result(AstNode1(tag, parser.currentSpan(), node))
+      case Left(e) => result(e)
       case _ =>
         parser.fallback()
         result(None)
   }
 
-def tryMulti(
-    parser: Parser,
-    opening: Option[lex.Tag],
-    ctx: String,
-    delimiter: lex.Tag,
-    ruleS: Rule*
-): Either[ParseError, List[AstNode]] = {
+def tryMulti(parser: Parser, opening: Option[lex.Tag], ctx: String, ruleS: Rule*): Either[ParseError, List[AstNode]] = {
   import scala.util.boundary
   parser.enter()
   try boundary[Either[ParseError, List[AstNode]]] {
       val rules: List[Rule] = ruleS.toList
-      val isStatement = delimiter match
-        case lex.Tag.`;` => true
-        case _ => false
+      var isStatement = false
+      var delimiter = lex.Tag.`,`
+      var rule_name = "<?>"
 
       if (rules.isEmpty) throw new IllegalArgumentException("rules cannot be empty")
       val terminator: Option[lex.Tag] = opening.map {
@@ -121,6 +154,7 @@ def tryMulti(
           case lex.Tag.`(` => lex.Tag.`)`
           case lex.Tag.`{` => lex.Tag.`}`
           case lex.Tag.`<` => lex.Tag.`>`
+          case lex.Tag.`|` => lex.Tag.`|`
           case _ => throw new IllegalArgumentException("Invalid opening tag")
       }
 
@@ -140,6 +174,8 @@ def tryMulti(
               rule.parser_fn(parser) match {
                 case Right(Some(n)) =>
                   node = Some(n)
+                  delimiter = rule.delimiter
+                  rule_name = rule.tag.toString
                   innerLoop.break()
                 case Left(e) =>
                   boundary.break(Left(e))
@@ -151,26 +187,27 @@ def tryMulti(
           // println(s"outer: node = $node")
           node match
             case Some(n) =>
-              // parser.file.reportSpan(
-              //   parser.getToken(node.get.span.start),
-              //   parser.getToken(node.get.span.end),
-              //   vfs.ErrorKind.Info,
-              //   errors.testingError,
-              //   s"node: ${node.get}",
-              //   3
-              // )
+              isStatement = delimiter match {
+                case lex.Tag.`;` => true
+                case _ => false
+              }
               res = res :+ n
             case None if terminator.isDefined && parser.peek(terminator.get) => outerLoop.break()
             case None if !terminator.isDefined => outerLoop.break()
             case _ => boundary.break(Left(parser.invalidTerm(rules.map(_.tag).mkString(" or "), ctx)))
 
-          if (isStatement && parser.srcContentT(parser.getToken(node.get.span.end)).last == '}') {
-            parser.eatToken(delimiter)
+          if (
+            isStatement && parser.srcContentT(parser.getToken(node.get.span.end)).last == '}' ||
+            delimiter == lex.Tag.invalid
+          ) {
+            parser.eatToken(delimiter) // 语句模式下，如果以}结尾，可选择性跳过分隔符
           } else {
-            if (!parser.eatToken(delimiter) && !terminator.isDefined && !isStatement) {
-              // print stack trace
-              boundary.break(Left(parser.invalidTerm(rules.map(_.tag).mkString(" or "), ctx)))
-            }
+            // 非语句模式下，必须有分隔符或者已到达终止符
+            terminator match
+              case Some(tag) =>
+                if (parser.peek(tag)) outerLoop.break()
+                else if (!parser.eatToken(delimiter)) { boundary.break(Left(parser.unexpectedToken(delimiter, ctx))) }
+              case None => if (!parser.eatToken(delimiter)) { outerLoop.break() }
           }
 
           terminator.foreach(tag => if (parser.peek(tag)) outerLoop.break())

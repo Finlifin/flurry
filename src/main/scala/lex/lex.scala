@@ -11,8 +11,7 @@ class Lexer(src: String) {
   var cursor: Int = 0
   // todo err: Unit = () // Scala Unit is like void, and defaults to ()
 
-  private def token(tag: Tag, from: Int, to: Int): Token =
-    Token(tag, from, to)
+  private def token(tag: Tag, from: Int, to: Int): Token = Token(tag, from, to)
 
   def next(): Token = {
     if (cursor >= src.length) return token(Tag.eof, src.length, src.length)
@@ -41,11 +40,7 @@ class Lexer(src: String) {
           // 'n' => char
           cursor += 3
           token(Tag.char, oldCursor, cursor)
-        } else if (
-          cursor + 3 < src.length && src(cursor + 1) == '\\' && src(
-            cursor + 3
-          ) == '\''
-        ) {
+        } else if (cursor + 3 < src.length && src(cursor + 1) == '\\' && src(cursor + 3) == '\'') {
           // '\n' => char
           cursor += 4
           token(Tag.char, oldCursor, cursor)
@@ -137,6 +132,9 @@ class Lexer(src: String) {
         } else if (peek('=')) {
           cursor += 2
           token(Tag.`<=`, oldCursor, cursor)
+        } else if (peek(':')) {
+          cursor += 2
+          token(Tag.`<:`, oldCursor, cursor)
         } else {
           cursor += 1
           token(Tag.`<`, oldCursor, cursor)
@@ -170,9 +168,7 @@ class Lexer(src: String) {
         } else if (peek('-')) {
           // 处理单行注释
           cursor += 2
-          while (cursor < src.length && src(cursor) != '\n') {
-            cursor += 1
-          }
+          while (cursor < src.length && src(cursor) != '\n') cursor += 1
           // 不跳过换行符，让下一个token处理它
           token(Tag.comment, oldCursor, cursor)
         } else {
@@ -223,7 +219,7 @@ class Lexer(src: String) {
           // 处理多行注释 {- ... -}
           cursor += 2
           var nesting = 1
-          while (cursor < src.length && nesting > 0) {
+          while (cursor < src.length && nesting > 0)
             if (cursor + 1 < src.length) {
               if (src(cursor) == '{' && src(cursor + 1) == '-') {
                 nesting += 1
@@ -231,14 +227,11 @@ class Lexer(src: String) {
               } else if (src(cursor) == '-' && src(cursor + 1) == '}') {
                 nesting -= 1
                 cursor += 2
-              } else {
-                cursor += 1
-              }
+              } else { cursor += 1 }
             } else {
               // 如果到达文件末尾但注释未闭合，返回无效token
               return token(Tag.invalid, oldCursor, cursor)
             }
-          }
           token(Tag.comment, oldCursor, cursor)
         } else {
           cursor += 1
@@ -292,17 +285,13 @@ class Lexer(src: String) {
         cursor += 1
         token(Tag.`$`, oldCursor, cursor)
 
-      case c if isIdentifierStart(c) =>
-        recognizeId()
+      case c if isIdentifierStart(c) => recognizeId()
 
-      case '`' =>
-        recognizeArbitaryId()
+      case '`' => recognizeArbitaryId()
 
-      case c if c.isDigit =>
-        recognizeDigit()
+      case c if c.isDigit => recognizeDigit()
 
-      case '"' =>
-        recognizeStr()
+      case '"' => recognizeStr()
 
       case _ =>
         cursor += 1
@@ -310,22 +299,14 @@ class Lexer(src: String) {
     }
   }
 
-  private def isIdentifierStart(c: Char): Boolean = {
-    c.isLetter || c == '_'
-  }
+  private def isIdentifierStart(c: Char): Boolean = c.isLetter || c == '_'
 
-  private def isIdentifierPart(c: Char): Boolean = {
-    c.isLetterOrDigit || c == '_'
-  }
+  private def isIdentifierPart(c: Char): Boolean = c.isLetterOrDigit || c == '_'
 
-  private def peek(char: Char): Boolean = {
-    cursor + 1 < src.length && src(cursor + 1) == char
-  }
+  private def peek(char: Char): Boolean = cursor + 1 < src.length && src(cursor + 1) == char
 
-  private def isSeparated(): Boolean = {
-    cursor > 0 && cursor + 1 < src.length &&
-    src(cursor - 1) == ' ' && src(cursor + 1) == ' '
-  }
+  private def isSeparated(): Boolean = cursor > 0 && cursor + 1 < src.length && src(cursor - 1) == ' ' &&
+    src(cursor + 1) == ' '
 
   private def recognizeStr(): Token = {
     val oldCursor = cursor
@@ -348,17 +329,15 @@ class Lexer(src: String) {
 
   private def recognizeId(): Token = {
     val oldCursor = cursor
-    
+
     // 读取标识符字符
-    while (cursor < src.length && isIdentifierPart(src(cursor))) {
-      cursor += 1
-    }
-    
+    while (cursor < src.length && isIdentifierPart(src(cursor))) cursor += 1
+
     // 提取标识符并检查是否是关键字
     val identifier = src.substring(oldCursor, cursor)
     Tag.keywords.get(identifier) match {
       case Some(kw) => token(kw, oldCursor, cursor)
-      case None     => token(Tag.id, oldCursor, cursor)
+      case None => token(Tag.id, oldCursor, cursor)
     }
   }
 
@@ -369,28 +348,21 @@ class Lexer(src: String) {
     var isReal = false
 
     // 读取整数部分
-    while (cursor < src.length && (src(cursor).isDigit || src(cursor) == '_')) {
-      cursor += 1
-    }
+    while (cursor < src.length && (src(cursor).isDigit || src(cursor) == '_')) cursor += 1
 
     // 检查是否有小数点和小数部分
     if (cursor < src.length && src(cursor) == '.') {
       if (cursor + 1 < src.length && src(cursor + 1).isDigit) {
         isReal = true
         cursor += 1 // 跳过小数点
-        
+
         // 读取小数部分
-        while (cursor < src.length && (src(cursor).isDigit || src(cursor) == '_')) {
-          cursor += 1
-        }
+        while (cursor < src.length && (src(cursor).isDigit || src(cursor) == '_')) cursor += 1
       }
     }
 
-    if (isReal) {
-      token(Tag.real, oldCursor, cursor)
-    } else {
-      token(Tag.int, oldCursor, cursor)
-    }
+    if (isReal) { token(Tag.real, oldCursor, cursor) }
+    else { token(Tag.int, oldCursor, cursor) }
   }
 
   private def recognizeArbitaryId(): Token = {
@@ -412,11 +384,10 @@ class Lexer(src: String) {
     token(Tag.invalid, oldCursor, cursor)
   }
 
-  private def seperated(at: Int): Boolean = {
+  private def seperated(at: Int): Boolean =
     if (src.length <= at + 1 || at < 1) false
     else if (src.charAt(at + 1) == ' ' && src.charAt(at - 1) == ' ') true
     else false
-  }
 
   private def eatChar(char: Char): Boolean = {
     var result: Boolean = false
