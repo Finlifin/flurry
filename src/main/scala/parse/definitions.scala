@@ -15,8 +15,6 @@ import scala.util.control.Breaks
 // param_rest_bind -> ... id: expr
 def tryParam(parser: Parser): ParseResult = withCtx(parser) {
   boundary {
-    if (parser.peek(lex.Tag.`^`)) boundary.break(tryAttribute(parser, tryParam))
-
     if (parser.eatToken(lex.Tag.k_implicit)) {
       val id = tryId(parser) match
         case Right(Some(id)) => id
@@ -717,7 +715,7 @@ def tryDefinition(parser: Parser): ParseResult = withCtx(parser) {
     case lex.Tag.k_typealias => tryTypeAlias(parser)
     case lex.Tag.k_newtype => tryNewType(parser)
 
-    case lex.Tag.`^` => tryAttribute(parser, tryDefinition)
+    // case lex.Tag.`^` => tryAttribute(parser, tryDefinition)
 
     case lex.Tag.k_inline => tryPrefixTerm(parser, Tag.inline_def, lex.Tag.k_inline, tryDefinition)
     case lex.Tag.k_pub => tryPrefixTerm(parser, Tag.pub_def, lex.Tag.k_pub, tryDefinition)

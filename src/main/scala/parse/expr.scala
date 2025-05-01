@@ -318,18 +318,12 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: AstNode, opt: ExprOption)
         parser.eatTokens(1)
         if (!parser.peek(lex.Tag.`{`)) { res = Some(AstNode1(Tag.effect_emit, parser.currentSpan(), left)) }
         else {
-          // 效果消除，需要解析分支
-          // val branches = tryBlock(parser, Rule(Tag.branch, tryBranch)) match
-          //   case Right(nodes) => nodes
-          //   case Left(e) => boundary.break(result(e))
+          val branches =
+            tryMulti(parser, Some(lex.Tag.`{`), "parsing an effect handler", Rule(Tag.branch, tryBranch)) match
+              case Right(nodes) => nodes
+              case Left(e) => boundary.break(result(e))
 
-          // result = Some(AstNode2(
-          //   Tag.effect_elimination,
-          //   parser.currentSpan(),
-          //   left,
-          //   branches
-          // ))
-          boundary.break(result(parser.invalidTerm("effect elimination", "effect elimination not yet implemented")))
+          res = Some(AstNodeL(Tag.effect_elimination, parser.currentSpan(), left, branches))
         }
 
       case lex.Tag.`!` =>
@@ -337,21 +331,17 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: AstNode, opt: ExprOption)
         parser.eatTokens(1)
         if (!parser.peek(lex.Tag.`{`)) { res = Some(AstNode1(Tag.error_throw, parser.currentSpan(), left)) }
         else {
-          // 错误消除，需要解析分支
-          // val branches = tryBlock(parser,
-          //   Rule(Tag.catch_branch, tryCatchBranch),
-          //   Rule(Tag.branch, tryBranch)
-          // ) match
-          //   case Right(nodes) => nodes
-          //   case Left(e) => boundary.break(result(e))
+          val branches = tryMulti(
+            parser,
+            Some(lex.Tag.`{`),
+            "parsing an error handler",
+            Rule(Tag.catch_branch, tryCatchBranch),
+            Rule(Tag.branch, tryBranch)
+          ) match
+            case Right(nodes) => nodes
+            case Left(e) => boundary.break(result(e))
 
-          // result = Some(AstNode2(
-          //   Tag.error_elimination,
-          //   parser.currentSpan(),
-          //   left,
-          //   branches
-          // ))
-          boundary.break(result(parser.invalidTerm("error elimination", "error elimination not yet implemented")))
+          res = Some(AstNodeL(Tag.error_elimination, parser.currentSpan(), left, branches))
         }
 
       case lex.Tag.`?` =>
@@ -360,17 +350,12 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: AstNode, opt: ExprOption)
         if (!parser.peek(lex.Tag.`{`)) { res = Some(AstNode1(Tag.option_unwrap, parser.currentSpan(), left)) }
         else {
           // 选项消除，需要解析块
-          // val block = tryBlock(parser, Rule(Tag.statement, tryStatement, lex.Tag.`;`)) match
-          //   case Right(nodes) => nodes
-          //   case Left(e) => boundary.break(result(e))
+          val block = tryBlock(parser) match
+            case Right(Some(node)) => node
+            case Left(e) => boundary.break(result(e))
+            case _ => boundary.break(result(parser.invalidTerm("block", "parsing an option elimination block")))
 
-          // result = Some(AstNode2(
-          //   Tag.option_elimination,
-          //   parser.currentSpan(),
-          //   left,
-          //   block
-          // ))
-          boundary.break(result(parser.invalidTerm("option elimination", "option elimination not yet implemented")))
+          res = Some(AstNode2(Tag.option_elimination, parser.currentSpan(), left, block))
         }
 
       case lex.Tag.k_match =>
@@ -379,18 +364,11 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: AstNode, opt: ExprOption)
         if (!parser.peek(lex.Tag.`{`)) boundary
           .break(result(parser.invalidTerm("match block", "expected a `{` to start a match block")))
 
-        // 匹配块，需要解析分支
-        // val branches = tryBlock(parser, Rule(Tag.branch, tryBranch)) match
-        //   case Right(nodes) => nodes
-        //   case Left(e) => boundary.break(result(e))
+        val branches = tryMulti(parser, Some(lex.Tag.`{`), "parsing a match block", Rule(Tag.branch, tryBranch)) match
+          case Right(nodes) => nodes
+          case Left(e) => boundary.break(result(e))
 
-        // result = Some(AstNode2(
-        //   Tag.post_match,
-        //   parser.currentSpan(),
-        //   left,
-        //   branches
-        // ))
-        boundary.break(result(parser.invalidTerm("match block", "match block not yet implemented")))
+        res = Some(AstNodeL(Tag.post_match, parser.currentSpan(), left, branches))
 
       case lex.Tag.k_matches =>
         // 匹配模式
@@ -401,14 +379,6 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: AstNode, opt: ExprOption)
           case _ => boundary.break(result(parser.invalidTerm("pattern", "expected a pattern after `matches`")))
 
         res = Some(AstNode2(Tag.bool_matches, parser.currentSpan(), left, pattern))
-      // boundary.break(
-      //   result(
-      //     parser.invalidTerm(
-      //       "matches pattern",
-      //       "matches pattern not yet implemented"
-      //     )
-      //   )
-      // )
 
       case lex.Tag.id =>
         // 字面量扩展

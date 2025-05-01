@@ -132,8 +132,6 @@ def tryPrefixPattern(parser: Parser): ParseResult = withCtx(parser) {
       case lex.Tag.`{` => tryRecordPattern(parser)
       case lex.Tag.`<` => tryPatternFromExpr(parser)
 
-      case lex.Tag.`^` => tryAttribute(parser, tryPattern)
-
       case lex.Tag.k_async => tryPrefixTerm(
           parser,
           Tag.pattern_async,

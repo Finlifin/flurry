@@ -1,63 +1,26 @@
 
 (file_scope 
-    (fn_def 
-        (id bubble_sort) 
-        (params 
-            (param_typed 
-                (id arr) 
-                (diamond_call 
-                    (id Slice) 
-                    (id T)))) 
-        (invalid) 
-        (clauses 
-            (clause_decl 
-                (id T) 
-                (id Ord))) 
-        (block 
-            (let_decl 
-                (id n) 
-                (invalid) 
+    (expr_statement 
+        (error_elimination 
+            (effect_emit 
                 (call 
-                    (select 
-                        (id arr) 
-                        (id len)))) 
-            (for_loop 
-                (invalid) 
-                (id i) 
-                (range_from_to 
-                    (int 0) 
-                    (id n)) 
-                (block 
-                    (for_loop 
-                        (invalid) 
-                        (id j) 
-                        (range_from_to 
-                            (int 0) 
-                            (parenthesis 
-                                (sub 
-                                    (sub 
-                                        (id n) 
-                                        (id i)) 
-                                    (int 1)))) 
-                        (block 
-                            (if_statement 
-                                (bool_gt 
-                                    (index_call 
-                                        (id arr) 
-                                        (id j)) 
-                                    (index_call 
-                                        (id arr) 
-                                        (add 
-                                            (id j) 
-                                            (int 1)))) 
-                                (block 
-                                    (expr_statement 
-                                        (call 
-                                            (select 
-                                                (id arr) 
-                                                (id swap)) 
-                                            (id j) 
-                                            (add 
-                                                (id j) 
-                                                (int 1))))) 
-                                (invalid)))))))))
+                    (id iter_num) 
+                    (int 1) 
+                    (int 100))) 
+            (branch 
+                (pattern_call 
+                    (id yield) 
+                    (id i)) 
+                (expr_statement 
+                    (call 
+                        (id println) 
+                        (id i)))) 
+            (catch_branch 
+                (id e) 
+                (expr_statement 
+                    (call 
+                        (id pritnln) 
+                        (str "some error happened: {}") 
+                        (image 
+                            (id e) 
+                            (id tag_name))))))))
