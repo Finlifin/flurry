@@ -1,4 +1,4 @@
-package comptime
+// package comptime
 
 trait Definition(
     attributes: Map[String, Value] = Map(),
@@ -22,7 +22,7 @@ trait Definition(
         case None => parent.flatMap(_.resolve(path))
 }
 
-case class StructField(ty: Type, default: Option[Value] = None, attributes: Map[String, Value] = Map()) extends Value
+// case class StructField(ty: Type, default: Option[Value] = None, attributes: Map[String, Value] = Map()) extends Value
 
 case class StructDefinition(
     attributes: Map[String, Value] = Map(),
@@ -61,13 +61,13 @@ case class GenericDefinition(
     name: Option[String] = None
 ) extends Definition(Map(), Map(), Nil, parent, name)
 
-enum EnumVariant {
-  case Identifer(name: String, attributes: Map[String, Value] = Map())
-  case WithTuple(name: String, fields: List[Type], attributes: Map[String, Value] = Map())
-  case WithStruct(name: String, struct: StructDefinition, attributes: Map[String, Value] = Map())
-  case WithSubEnum(name: String, sub: EnumDefinition, attributes: Map[String, Value] = Map())
-  case PatternDefined(name: String, pattern: Value, attributes: Map[String, Value] = Map())
-}
+// enum EnumVariant {
+//   case Identifer(name: String, attributes: Map[String, Value] = Map())
+//   case WithTuple(name: String, fields: List[Type], attributes: Map[String, Value] = Map())
+//   case WithStruct(name: String, struct: StructDefinition, attributes: Map[String, Value] = Map())
+//   case WithSubEnum(name: String, sub: EnumDefinition, attributes: Map[String, Value] = Map())
+//   case PatternDefined(name: String, pattern: Value, attributes: Map[String, Value] = Map())
+// }
 
 case class EnumDefinition(
     attributes: Map[String, Value] = Map(),
@@ -174,12 +174,12 @@ enum Param {
   case Id(id: String, attributes: Map[String, Value] = Map())
 }
 
-enum Clause {
-  case TypeDeclaration(id: String)
-  case TypedDeclaration(id: String, ty: Type, attributes: Map[String, Value] = Map())
-  case TraitBound(id: String, trait_bound: Value, attributes: Map[String, Value] = Map())
-  // TODO
-  case Requires()
-  case Ensures()
-  case Outcomes()
-}
+// enum Clause {
+//   case TypeDeclaration(id: String)
+//   case TypedDeclaration(id: String, ty: Type, attributes: Map[String, Value] = Map())
+//   case TraitBound(id: String, trait_bound: Value, attributes: Map[String, Value] = Map())
+//   // TODO
+//   case Requires()
+//   case Ensures()
+//   case Outcomes()
+// }

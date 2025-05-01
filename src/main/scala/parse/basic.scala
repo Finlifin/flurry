@@ -109,7 +109,7 @@ def tryPropertyAssign(parser: Parser): ParseResult = withCtx(parser) {
   } else { result(None) }
 }
 
-// ^expr expr
+// ^expr term
 def tryAttribute(parser: Parser, followRule: Parser => ParseResult): ParseResult = withCtx(parser, Some(lex.Tag.`^`)) {
   boundary {
     val attr = tryExpr(parser, ExprOption(precedence = 90)) match
@@ -137,6 +137,26 @@ def tryPrefixTerm(parser: Parser, tag: Tag, prefixToken: lex.Tag, followRule: Pa
         parser.fallback()
         result(None)
   }
+
+// ^expr ^expr ^expr term => Attribute([expr | expr | expr], term)
+def tryAttributes(parser: Parser): Either[ParseError, List[AstNode]] = {
+  parser.enter()
+  try boundary[Either[ParseError, List[AstNode]]] {
+      var res: List[AstNode] = List()
+      var endLoop = false
+      while (!endLoop)
+        if (parser.eatToken(lex.Tag.`^`)) {
+          val properties = tryExpr(parser, ExprOption(precedence = 90)) match
+            case Right(Some(node)) => node
+            case Left(e) => boundary.break(Left(e))
+            case _ => boundary.break(Left(parser.invalidTerm("an expression", "parsing an attribute")))
+          res = res :+ properties
+        } else { endLoop = true }
+
+      Right(res)
+    }
+  finally parser.exit()
+}
 
 def tryMulti(parser: Parser, opening: Option[lex.Tag], ctx: String, ruleS: Rule*): Either[ParseError, List[AstNode]] = {
   import scala.util.boundary
@@ -170,10 +190,15 @@ def tryMulti(parser: Parser, opening: Option[lex.Tag], ctx: String, ruleS: Rule*
           val innerLoop = new Breaks
           innerLoop.breakable {
             for (rule <- rules)
-              // println(s"innerLoop: rule = $rule, next = ${parser.peekToken()}")
+              var attributes = tryAttributes(parser) match
+                case Right(nodes) => nodes
+                case Left(e) => boundary.break(Left(e))
+
               rule.parser_fn(parser) match {
                 case Right(Some(n)) =>
-                  node = Some(n)
+                  // BUG: 我不知道为什么，这对statement无效
+                  node = Some(attributes.foldRight(n)(AstNode2(Tag.attribute, parser.currentSpan(), _, _)))
+                  attributes.foreach(node => println(node.toString()))
                   delimiter = rule.delimiter
                   rule_name = rule.tag.toString
                   innerLoop.break()

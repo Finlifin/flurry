@@ -29,7 +29,7 @@ def tryStatement(parser: Parser): ParseResult = withCtx(parser) {
     case lex.Tag.k_use => tryUseStatement(parser)
 
     // BUG: 由于definition总是比statement优先级高，所以attribute总是会进入definition
-    case lex.Tag.`^` => tryAttribute(parser, tryStatement)
+    // case lex.Tag.`^` => tryAttribute(parser, tryStatement)
 
     case _ => tryExprStatement(parser)
 }
