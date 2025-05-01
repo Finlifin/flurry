@@ -3,7 +3,7 @@ package comptime
 // 基础 Value trait，所有编译时值的基础接口
 trait Value {
   // 获取该值的类型
-  def getType: Type
+  def getType: Type = AnyType()
 
   // 编译时值计算方法，可以在编译期求值
   def evaluate: Value = this
@@ -16,6 +16,8 @@ trait Value {
 
   // 输出人类可读的字符串表示
   def toString: String
+
+  def getNamespace: Option[Definition] = None // 获取命名空间定义
 }
 
 // 基本值类型实现
