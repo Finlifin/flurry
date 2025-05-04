@@ -48,7 +48,7 @@ class Vfs {
           // 忽略指定的文件或目录
           if (!ignores.contains(nodeName)) {
             val nodeKind =
-              if (file.isDirectory()) { if (nodeName == "src") VfsNodeKind.Src else VfsNodeKind.Directory }
+              if (file.isDirectory()) { if (nodeName == "src") VfsNodeKind.SrcDirectory else VfsNodeKind.Directory }
               else { VfsNodeKind.File }
 
             val childNode = new VfsNode(nodeKind, nodeName, nextId(), Some(parentNode))
@@ -74,7 +74,6 @@ class Vfs {
     var currentNode: Option[VfsNode] = Some(root)
 
     // 根节点为一个绝对路径
-
     currentNode
   }
 
@@ -118,9 +117,9 @@ class Vfs {
   }
 
   def dumpSExpr(writer: java.io.PrintWriter): Unit = {
-    writer.println("(vfs")
+    writer.print("(vfs")
     root.dumpSExpr(writer)
-    writer.println(")")
+    writer.print(")")
   }
 }
 
@@ -128,7 +127,7 @@ enum VfsNodeKind {
   case File
   case Directory
   case Root
-  case Src
+  case SrcDirectory
 }
 
 // 定义错误报告辅助类
@@ -169,7 +168,7 @@ class VfsNode(
     case None => name
 
   def modFilePath(): String = kind match
-    case VfsNodeKind.Src => absolutePath() + "/main.fl"
+    case VfsNodeKind.SrcDirectory => absolutePath() + "/main.fl"
     case VfsNodeKind.Directory => absolutePath() + "/mod.fl"
     case _ => absolutePath()
 
@@ -520,7 +519,7 @@ class VfsNode(
         }
       case None => ()
     }
-    writer.println(")")
+    writer.print(")")
   }
 }
 

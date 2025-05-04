@@ -633,7 +633,7 @@ def tryModuleDef(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_m
     val rules = List(
       Rule(Tag.property, tryProperty),
       Rule(Tag.definition, tryDefinition, lex.Tag.`;`),
-      Rule(Tag.statement, tryStatement)
+      Rule(Tag.statement, tryStatement, lex.Tag.`;`)
     )
 
     tryBlock(parser) match

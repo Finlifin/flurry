@@ -1,21 +1,21 @@
-// package comptime
+package comptime
 
 // 基础 Value trait，所有编译时值的基础接口
 trait Value {
   // 获取该值的类型
   def getType: Type = AnyType()
 
-//   // 编译时值计算方法，可以在编译期求值
-//   def evaluate: Value = this
+  // // 编译时值计算方法，可以在编译期求值
+  // def evaluate: Value = this
 
-//   // 尝试将值转换为特定类型
-//   def castTo(targetType: Type): Option[Value]
+  // // 尝试将值转换为特定类型
+  // def castTo(targetType: Type): Option[Value]
 
-//   // 检查两个值是否相等
-//   def equals(other: Value): Boolean
+  // // 检查两个值是否相等
+  // def equals(other: Value): Boolean
 
-  // 输出人类可读的字符串表示
-  def toString: String
+  // // 输出人类可读的字符串表示
+  // def toString: String
 
   def getNamespace: Option[Definition] = None // 获取命名空间定义
 }

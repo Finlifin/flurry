@@ -1,4 +1,39 @@
-iter_num(1, 100)#! {
-    yield(i) => println(i),
-    catch e => pritnln("some error happened: {}", e'tag_name)
+fn main() {
+}
+
+mod A {
+    mod B {
+
+    }
+
+    mod C {
+
+    }
+}
+
+mod D {
+    mod E {
+        mod F {
+            mod G {}
+        }
+    }
+}
+
+struct Student {
+    name: String,
+    age: u32,
+
+    struct Address {
+        street: String,
+        city: String,
+    }
+
+    union Man {
+        street: String,
+        city: String,
+    }
+    enum That {
+        Street(String),
+        City(String),
+    }
 }

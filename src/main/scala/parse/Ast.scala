@@ -10,10 +10,9 @@ class Ast {
 
 class AstNode(tag: Tag, var span: Span) {
   def getTag: Tag = tag
-
   def dumpSExpr(writer: java.io.PrintWriter): Unit = writer.print("(" + tag.toString)
-
   def setSpan(start: Int, end: Int): Unit = span = Span(start, end)
+  def getString: Option[String] = None
 }
 
 // without children
@@ -40,6 +39,9 @@ class AstNode1(tag: Tag, span: Span, child: AstNode) extends AstNode(tag, span) 
 // with one single value
 class AstNodeValue[T](tag: Tag, span: Span, value: T) extends AstNode(tag, span) {
   def getValue: T = value
+  override def getString: Option[String] = value match
+    case s: String => Some(s)
+    case _ => None
 
   override def dumpSExpr(writer: java.io.PrintWriter): Unit = {
     super.dumpSExpr(writer)

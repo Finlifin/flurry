@@ -1,5 +1,1 @@
-(vfs
-(Root test_project (Src src (File main.fl)
-)
-)
-)
+(vfs(Root test_project (SrcDirectory src (File main.fl) (File student.fl) (Directory parse) (Directory lex (File mod.fl) (File lexer.fl) (File token.fl)))))

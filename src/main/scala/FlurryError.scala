@@ -24,7 +24,7 @@ case class ErrorNote(
 )
 
 // 基本错误特质
-trait FlurryError {
+trait FlurryError extends Throwable {
   def errorMessage: String = this.toString()
   def code: Int = 0
   def severity: Severity = Severity.Error
