@@ -14,16 +14,9 @@ class Parser(var file: VfsNode) {
   var cursor: Int = 0
   var cursors: Stack[Int] = Stack(0)
 
-  def parse(): Ast = {
-    val result = tryFileScope(this)
-    var ast = Ast()
-    result match {
-      case Right(Some(node)) => ast.root = node
-      case Left(e) => handlerError(e)
-      case _ =>
-    }
-    ast
-  }
+  def parse(): ParseResult = tryFileScope(this) match
+    case Left(value) => handlerError(value); Left(value)
+    case Right(value) => result(value)
 
   def peek(expected: lex.Tag*): Boolean =
     // check if forward tokens is in expected
@@ -54,6 +47,8 @@ class Parser(var file: VfsNode) {
       cursor += 1
       tokens(cursor)
     }
+
+  def eatId(): Option[String] = if (peek(lex.Tag.id)) Some(srcContentT(nextToken())) else None
 
   def peekToken(): Token =
     if (cursor + 1 >= tokens.length) { lex.Token(lex.Tag.eof, 0, 0) }

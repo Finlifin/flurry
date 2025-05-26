@@ -1,7 +1,7 @@
 import parse.*
 import vfs.*
-import analysis1.Analyzer
-import comptime.PackageDefinition
+// import analysis1.Analyzer
+// import comptime.PackageDefinition
 
 @main
 def main(): Unit =
@@ -15,14 +15,15 @@ def main(): Unit =
   vfs_buffter.close()
   val node = vfs.findNodeByPath("test_project/src/main.fl").get
   node.ensureAst()
-  node.ast.get.root.dumpSExpr(ast_buffer)
+  val sExpr = node.ast.get.toString()
+  ast_buffer.println(sExpr)
   ast_buffer.flush()
   ast_buffer.close()
 
-  var analyzer = Analyzer()
-  analyzer.initBuiltins()
-  analyzer.fsSymbolAllocation(vfs)
-  analyzer.resolveFileScope(node, analyzer.project.lookup("main").get.asInstanceOf[PackageDefinition])
-  println(analyzer.project.dumpNamespace(hir_buffer))
-  hir_buffer.flush()
-  hir_buffer.close()
+//   var analyzer = Analyzer()
+//   analyzer.initBuiltins()
+//   analyzer.fsSymbolAllocation(vfs)
+//   analyzer.resolveFileScope(node, analyzer.project.lookup("main").get.asInstanceOf[PackageDefinition])
+//   println(analyzer.project.dumpNamespace(hir_buffer))
+//   hir_buffer.flush()
+//   hir_buffer.close()

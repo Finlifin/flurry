@@ -1,1 +1,18 @@
-(file_scope (fn_def (id main) (params) (invalid) (invalid) (block)) (mod (id A) (block (mod (id B) (block)) (mod (id C) (block)))) (mod (id D) (block (mod (id E) (block (mod (id F) (block (mod (id G) (block)))))))) (struct_def (id Student) (invalid) (struct_def_body (struct_field (id name) (id String) (invalid)) (struct_field (id age) (id u32) (invalid)) (struct_def (id Address) (invalid) (struct_def_body (struct_field (id street) (id String) (invalid)) (struct_field (id city) (id String) (invalid)))) (union_def (id Man) (invalid) (union_def_body (union_variant (id street) (id String)) (union_variant (id city) (id String)))) (enum_def (id That) (invalid) (enum_def_body (enum_variant_with_tuple (id Street) (tuple (id String))) (enum_variant_with_tuple (id City) (tuple (id String))))))))
+
+(file-scope 
+    (fn main 
+        () 
+        (invalid) 
+        (block 
+            (call println 
+                (select 
+                    (obj-call Student 
+                        (property name "Alice") 
+                        (property age 20)) name)))) 
+    (module schemas 
+        (struct Student 
+            (
+                (field name String = 
+                    (invalid)) 
+                (field age Int = 
+                    (invalid))))))

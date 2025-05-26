@@ -1,39 +1,10 @@
 fn main() {
+    println(Student { .name "Alice", .age 20 }.name);
 }
 
-mod A {
-    mod B {
-
-    }
-
-    mod C {
-
-    }
-}
-
-mod D {
-    mod E {
-        mod F {
-            mod G {}
-        }
-    }
-}
-
-struct Student {
-    name: String,
-    age: u32,
-
-    struct Address {
-        street: String,
-        city: String,
-    }
-
-    union Man {
-        street: String,
-        city: String,
-    }
-    enum That {
-        Street(String),
-        City(String),
+mod schemas {
+    struct Student {
+        name: String,
+        age: Int,
     }
 }

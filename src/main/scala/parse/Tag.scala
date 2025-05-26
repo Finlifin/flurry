@@ -373,7 +373,7 @@ enum Tag {
 
   // param_optional -> .id: expr = expr
   // param_typed -> id: expr
-  // param_trait_bound -> id: expr :- expr
+  // param_trait_bound -> id:- expr
   // param_id -> id
   // param_optional_id -> .id
   // param_self -> self
