@@ -75,6 +75,7 @@ def tryPatternPratt(parser: Parser, minPrec: Int, opt: PatternOption): ParseResu
             // Parse right operand with higher precedence
             val right = tryPatternPratt(parser, opInfo.prec + 1, opt) match
               case Right(Some(node)) => node
+              case Left(e) => boundary.break(Left(e))
               case _ => boundary.break(result(parser.invalidPattern("missing right operand")))
 
             // Create binary operator node
@@ -112,6 +113,7 @@ def tryPrefixPattern(parser: Parser): ParseResult = withCtx(parser) {
     // Try literal
     tryAtom(parser) match
       case Right(Some(value)) => boundary.break(result(value))
+      case Left(e) => boundary.break(result(e))
       case _ => ()
 
     val token = parser.peekToken()
@@ -120,10 +122,12 @@ def tryPrefixPattern(parser: Parser): ParseResult = withCtx(parser) {
         // Try range-to or symbol
         tryRangeTo(parser) match
           case Right(Some(node)) => boundary.break(result(node))
+          case Left(e) => boundary.break(result(e))
           case _ => ()
 
         trySymbol(parser) match
           case Right(Some(node)) => boundary.break(result(node))
+          case Left(e) => boundary.break(result(e))
           case _ => ()
 
         boundary.break(result(None))
@@ -189,7 +193,7 @@ def tryPostfixPattern(parser: Parser, tag: lex.Tag, left: Ast, minPrec: Int, opt
           case Right(nodes) => nodes
           case Left(e) => boundary.break(result(e))
 
-        res = Some(Ast.PatternCall(left, nodes.toMList).withSpan(parser.currentSpan()))
+        res = Some(Ast.PatternCall(left, nodes).withSpan(parser.currentSpan()))
 
       case lex.Tag.`<` =>
         // Diamond pattern call
@@ -198,7 +202,7 @@ def tryPostfixPattern(parser: Parser, tag: lex.Tag, left: Ast, minPrec: Int, opt
             case Right(nodes) => nodes
             case Left(e) => boundary.break(result(e))
 
-        res = Some(Ast.PatternDiamondCall(left, nodes.toMList).withSpan(parser.currentSpan()))
+        res = Some(Ast.PatternDiamondCall(left, nodes).withSpan(parser.currentSpan()))
 
       case lex.Tag.`.` =>
         // Range patterns
@@ -231,7 +235,7 @@ def tryPostfixPattern(parser: Parser, tag: lex.Tag, left: Ast, minPrec: Int, opt
           Rule("property pattern", tryPropertyPattern),
           Rule("id", tryId)
         ) match
-          case Right(nodes) => res = Some(Ast.PatternObjectCall(left, nodes.toMList).withSpan(parser.currentSpan()))
+          case Right(nodes) => res = Some(Ast.PatternObjectCall(left, nodes).withSpan(parser.currentSpan()))
           case Left(e) =>
             // parser.fallback();
             boundary.break(Left(ParseError.MeetRecordStart))
@@ -381,7 +385,7 @@ def tryRecordPattern(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag
       case Right(nodes) => nodes
       case Left(e) => boundary.break(result(e))
 
-    result(Ast.PatternRecord(nodes.toMList).withSpan(parser.currentSpan()))
+    result(Ast.PatternRecord(nodes).withSpan(parser.currentSpan()))
   }
 }
 
@@ -397,7 +401,7 @@ def tryListPattern(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`
       case Right(nodes) => nodes
       case Left(e) => boundary.break(result(e))
 
-    result(Ast.PatternList(nodes.toMList).withSpan(parser.currentSpan()))
+    result(Ast.PatternList(nodes).withSpan(parser.currentSpan()))
   }
 }
 
@@ -413,7 +417,7 @@ def tryTuplePattern(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.
       case Right(nodes) => nodes
       case Left(e) => boundary.break(result(e))
 
-    result(Ast.PatternTuple(nodes.toMList).withSpan(parser.currentSpan()))
+    result(Ast.PatternTuple(nodes).withSpan(parser.currentSpan()))
   }
 }
 
@@ -486,9 +490,9 @@ def tryBitVecPattern(parser: Parser, kind: Char): ParseResult = withCtx(parser) 
         case Left(e) => boundary.break(result(e))
 
       val bitVecPattern = kind match
-        case 'x' => Ast.PatternBitVec0x(nodes.toMList).withSpan(parser.currentSpan())
-        case 'o' => Ast.PatternBitVec0o(nodes.toMList).withSpan(parser.currentSpan())
-        case 'b' => Ast.PatternBitVec0b(nodes.toMList).withSpan(parser.currentSpan())
+        case 'x' => Ast.PatternBitVec0x(nodes).withSpan(parser.currentSpan())
+        case 'o' => Ast.PatternBitVec0o(nodes).withSpan(parser.currentSpan())
+        case 'b' => Ast.PatternBitVec0b(nodes).withSpan(parser.currentSpan())
         case _ => throw new IllegalArgumentException("Invalid kind for bit vector pattern")
 
       result(bitVecPattern)

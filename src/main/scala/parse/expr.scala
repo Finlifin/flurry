@@ -14,6 +14,7 @@ def tryExpr(parser: Parser, opt: ExprOption): ParseResult = withCtx(parser)(tryP
 case class OpInfo(prec: Int, tag: Tag)
 
 /** 操作符表，将词法标记映射到操作符信息 */
+/* 慎重修改此表，可能会影响解析器的行为 */
 object OpTable {
   private val DEFAULT_OP_INFO = OpInfo(-1, Tag.invalid)
 
@@ -31,6 +32,7 @@ object OpTable {
     lex.Tag.`:` -> OpInfo(40, Tag.type_with),
     lex.Tag.`:-` -> OpInfo(40, Tag.trait_bound),
     lex.Tag.k_matches -> OpInfo(40, Tag.bool_matches),
+    lex.Tag.`->` -> OpInfo(50, Tag.arrow), // " -> "
     lex.Tag.`_+_` -> OpInfo(60, Tag.add), // " + "
     lex.Tag.`_-_` -> OpInfo(60, Tag.sub), // " - "
 
@@ -103,6 +105,7 @@ def tryPratt(parser: Parser, minPrec: Int, opt: ExprOption): ParseResult = withC
             // 解析右操作数（递归调用，使用更高优先级）
             val right = tryPratt(parser, opInfo.prec + 1, opt) match
               case Right(Some(node)) => node
+              case Left(e) => boundary.break(result(e))
               case _ => boundary
                   .break(result(parser.invalidTerm("expression", "parsing a right operand for binary operator")))
 
@@ -127,6 +130,7 @@ def tryPratt(parser: Parser, minPrec: Int, opt: ExprOption): ParseResult = withC
               case lex.Tag.`|` => Ast.Pipe(currentLeft, right).withSpan(parser.currentSpan())
               case lex.Tag.`|>` => Ast.PipePrepend(currentLeft, right).withSpan(parser.currentSpan())
               case lex.Tag.`++` => Ast.AddAdd(currentLeft, right).withSpan(parser.currentSpan())
+              case lex.Tag.`->` => Ast.Arrow(currentLeft, right).withSpan(parser.currentSpan())
               case _ => throw new IllegalArgumentException(s"Unsupported operator: ${token.tag}")
       }
     }
@@ -159,14 +163,14 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: Ast, opt: ExprOption): Pa
           parser,
           Some(lex.Tag.`(`),
           "parsing a call",
-          Rule("function argument", tryExpr),
-          Rule("optional function argument", tryPropertyAssign)
+          Rule("optional function argument", tryPropertyAssign),
+          Rule("function argument", tryExpr)
           // Rule(Tag.expand_items, tryExpandItems)
         ) match
           case Right(nodes) => nodes
           case Left(e) => boundary.break(result(e))
 
-        res = Some(Ast.Call(left, nodes.toMList).withSpan(parser.currentSpan()))
+        res = Some(Ast.Call(left, nodes).withSpan(parser.currentSpan()))
 
       case lex.Tag.`<` =>
         // 泛型调用（类似函数调用）
@@ -174,13 +178,13 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: Ast, opt: ExprOption): Pa
           parser,
           Some(lex.Tag.`<`),
           "parsing a diamond call",
-          Rule("diamond argument", tryExpr),
-          Rule("optional diamond argument", tryPropertyAssign)
+          Rule("optional diamond argument", tryPropertyAssign),
+          Rule("diamond argument", tryExpr)
         ) match
           case Right(nodes) => nodes
           case Left(e) => boundary.break(result(e))
 
-        res = Some(Ast.DiamondCall(left, nodes.toMList).withSpan(parser.currentSpan()))
+        res = Some(Ast.DiamondCall(left, nodes).withSpan(parser.currentSpan()))
 
       case lex.Tag.`{` =>
         // 记录调用（类似函数调用）
@@ -196,7 +200,7 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: Ast, opt: ExprOption): Pa
           case Right(nodes) => nodes
           case Left(e) => boundary.break(result(e))
 
-        res = Some(Ast.ObjectCall(left, nodes.toMList).withSpan(parser.currentSpan()))
+        res = Some(Ast.ObjectCall(left, nodes).withSpan(parser.currentSpan()))
 
       case lex.Tag.`[` =>
         // 索引调用
@@ -329,7 +333,7 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: Ast, opt: ExprOption): Pa
             case Right(nodes) => nodes
             case Left(e) => boundary.break(result(e))
 
-          res = Some(Ast.EffectElimination(left, branches.toMList).withSpan(parser.currentSpan()))
+          res = Some(Ast.EffectElimination(left, branches).withSpan(parser.currentSpan()))
 
       case lex.Tag.`!` =>
         // 错误抛出或消除
@@ -346,7 +350,7 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: Ast, opt: ExprOption): Pa
             case Right(nodes) => nodes
             case Left(e) => boundary.break(result(e))
 
-          res = Some(Ast.ErrorElimination(left, branches.toMList).withSpan(parser.currentSpan()))
+          res = Some(Ast.ErrorElimination(left, branches).withSpan(parser.currentSpan()))
 
       case lex.Tag.`?` =>
         // 可选值解包或消除
@@ -372,7 +376,7 @@ def tryPostfixExpr(parser: Parser, tag: lex.Tag, left: Ast, opt: ExprOption): Pa
             case Right(nodes) => nodes
             case Left(e) => boundary.break(result(e))
 
-        res = Some(Ast.Match(left, branches.toMList).withSpan(parser.currentSpan()))
+        res = Some(Ast.PostMatch(left, branches).withSpan(parser.currentSpan()))
 
       case lex.Tag.k_matches =>
         // 匹配模式
@@ -410,6 +414,7 @@ def tryPrefixExpr(parser: Parser): ParseResult = withCtx(parser) {
   boundary {
     tryAtom(parser) match
       case Right(Some(value)) => boundary.break(result(value))
+      case Left(e) => boundary.break(result(e))
       case _ => ()
 
     val token = parser.peekToken()
@@ -467,7 +472,7 @@ def tryUnitOrParenthesisOrTuple(parser: Parser): ParseResult = withCtx(parser, S
           case Left(e) => boundary.break(result(e))
         if (!parser.eatToken(lex.Tag.`)`)) boundary
           .break(result(ParseError.UnexpectedToken(lex.Tag.`)`, parser.peekToken(), "closing a tuple expression")))
-        result(Ast.Tuple((expr :: tail).toMList).withSpan(parser.currentSpan()))
+        result(Ast.Tuple(expr :: tail).withSpan(parser.currentSpan()))
       } else {
         if (!parser.eatToken(lex.Tag.`)`)) boundary
           .break(result(parser.invalidTerm("expression", "parsing a parenthesis expression or a tuple")))
@@ -485,7 +490,7 @@ def tryList(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`[`), tr
       case Right(nodes) => nodes
       case Left(err) => boundary.break(result(err))
 
-    result(Ast.List(nodes.toMList).withSpan(parser.currentSpan()))
+    result(Ast.ListOf(nodes).withSpan(parser.currentSpan()))
   }
 }
 
@@ -502,7 +507,7 @@ def tryObject(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`{`), 
       case Right(nodes) => nodes
       case Left(err) => boundary.break(result(err))
 
-    result(Ast.Object(nodes.toMList).withSpan(parser.currentSpan()))
+    result(Ast.Object(nodes).withSpan(parser.currentSpan()))
   }
 }
 
@@ -522,12 +527,12 @@ def tryForallType(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_
       case Right(nodes) => nodes
       case Left(err) => boundary.break(result(err))
 
-    val expr = tryExpr(parser) match
+    val expr = tryExpr(parser, ExprOption(noRecordCall = true)) match
       case Right(Some(node)) => node
       case Left(err) => boundary.break(result(err))
       case _ => boundary.break(result(parser.invalidTerm("expression", "parsing a forall type")))
 
-    result(Ast.ForallType(params.toMList, expr).withSpan(parser.currentSpan()))
+    result(Ast.ForallType(params, expr).withSpan(parser.currentSpan()))
   }
 }
 
@@ -540,7 +545,7 @@ def tryEffectQualifiedType(parser: Parser): ParseResult = withCtx(parser, Some(l
       case _ => boundary
           .break(result(parser.invalidTerm("expression", "parsing effect list of an effect qualified type")))
 
-    val expr = tryExpr(parser, ExprOption(precedence = 90)) match
+    val expr = tryExpr(parser, ExprOption(noRecordCall = true)) match
       case Right(Some(node)) => node
       case Left(err) => boundary.break(result(err))
       case _ => boundary.break(result(parser.invalidTerm("expression", "parsing an effect qualified type")))
@@ -558,7 +563,7 @@ def tryErrorQualifiedType(parser: Parser): ParseResult = withCtx(parser, Some(le
       case _ => boundary
           .break(result(parser.invalidTerm("expression", "parsing error list of an error qualified type")))
 
-    val expr = tryExpr(parser, ExprOption(precedence = 90)) match
+    val expr = tryExpr(parser, ExprOption(noRecordCall = true)) match
       case Right(Some(node)) => node
       case Left(err) => boundary.break(result(err))
       case _ => boundary.break(result(parser.invalidTerm("expression", "parsing an error qualified type")))
@@ -567,71 +572,36 @@ def tryErrorQualifiedType(parser: Parser): ParseResult = withCtx(parser, Some(le
   }
 }
 
-// // lambda -> |(id | param)*| return_type? block|expr
-// def tryLambda(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`|`), true) {
-//   boundary[ParseResult] {
-//     val params = tryMulti(
-//       parser,
-//       Some(lex.Tag.`|`),
-//       "parsing a lambda parameter list",
-//       Rule(Tag.param, tryParam),
-//       Rule(Tag.id, tryId)
-//     ) match
-//       case Right(nodes) => AstNodeN(Tag.params, parser.currentSpan(), nodes)
-//       case Left(e) => boundary.break(result(e))
-
-//     val returnType =
-//       if (parser.peek(lex.Tag.`->`)) {
-//         parser.eatTokens(1)
-//         tryExpr(parser) match
-//           case Right(Some(node)) => node
-//           case Left(e) => boundary.break(result(e))
-//           case _ => boundary.break(result(parser.invalidTerm("expression", "parsing a lambda return type")))
-//       } else { null }
-
-//     val block_or_expr = tryBlock(parser) match
-//       case Right(Some(node)) => node
-//       case Left(e) => boundary.break(result(e))
-//       case _ => tryExpr(parser) match
-//           case Right(Some(node)) => node
-//           case Left(e) => boundary.break(result(e))
-//           case _ => boundary.break(result(parser.invalidTerm("expression", "parsing a lambda block or expression")))
-
-//     result(AstNode3(Tag.lambda, parser.currentSpan(), params, returnType, block_or_expr))
-//   }
-// }
+// lambda -> |(id | param)*| return_type? block|expr
 def tryLambda(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`|`), true) {
   boundary[ParseResult] {
-    val params = tryMulti(parser, Some(lex.Tag.`|`), "parsing a lambda parameter list", Rule("parameter", tryId)) match
+    val params = tryMulti(
+      parser,
+      Some(lex.Tag.`|`),
+      "parsing a lambda parameter list",
+      Rule("lambda parameter", tryParam),
+      Rule("lambda id", tryId)
+    ) match
       case Right(nodes) => nodes
-      case Left(err) => boundary.break(result(err))
+      case Left(e) => boundary.break(result(e))
 
-    var returnType: Ast = null
-    if (parser.peek(lex.Tag.`->`)) {
-      parser.eatTokens(1)
-      returnType = tryExpr(parser) match
-        case Right(Some(node)) => node
-        case Left(err) => boundary.break(result(err))
-        case _ => boundary.break(result(parser.invalidTerm("expression", "parsing a lambda return type")))
-    }
+    val returnType =
+      if (parser.peek(lex.Tag.`->`)) {
+        parser.eatTokens(1)
+        tryExpr(parser) match
+          case Right(Some(node)) => node
+          case Left(e) => boundary.break(result(e))
+          case _ => boundary.break(result(parser.invalidTerm("expression", "parsing a lambda return type")))
+      } else { null }
 
-    // 尝试解析块或表达式
-    val blockOrExpr = tryExpr(parser) match
+    val body = tryBlock(parser) match
       case Right(Some(node)) => node
-      case Left(err) => boundary.break(result(err))
-      case _ => boundary.break(result(parser.invalidTerm("expression", "parsing a lambda body")))
+      case Left(e) => boundary.break(result(e))
+      case _ => tryExpr(parser) match
+          case Right(Some(node)) => node
+          case Left(e) => boundary.break(result(e))
+          case _ => boundary.break(result(parser.invalidTerm("expression", "parsing a lambda body")))
 
-    // 创建 Lambda AST 节点
-    // 注意：这里我们创建一个 lambda，根据 Ast 的情况可能需要调整
-    if (returnType == null) {
-      result(
-        Ast.Lambda(params.map(p => p.asInstanceOf[Ast.Id].name).toMList, blockOrExpr).withSpan(parser.currentSpan())
-      )
-    } else {
-      result(
-        Ast.LambdaWithType(params.map(p => p.asInstanceOf[Ast.Id].name).toMList, returnType, blockOrExpr)
-          .withSpan(parser.currentSpan())
-      )
-    }
+    result(Ast.Lambda(params, returnType, body))
   }
 }

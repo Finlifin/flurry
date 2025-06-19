@@ -1,5 +1,6 @@
 package parse
 
+// 准备遗弃
 enum Tag {
   case id
   case int
@@ -66,6 +67,8 @@ enum Tag {
   case bool_implies
   // bool_matches -> expr matches pattern
   case bool_matches
+
+  case arrow
 
   // type_with -> expr : expr
   // subtype_with -> expr <: expr

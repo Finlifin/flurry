@@ -75,7 +75,7 @@ def tryProperty(parser: Parser): ParseResult = withCtx(parser) {
     if (!parser.peek(lex.Tag.`.`, lex.Tag.id)) { boundary.break(result(None)) }
 
     parser.eatTokens(1)
-    val id = Ast.Id(parser.srcContentT(parser.nextToken())).withSpan(parser.currentSpan())
+    val id = parser.srcContentT(parser.nextToken())
 
     val value = tryExpr(parser) match
       case Right(Some(expr)) => expr
@@ -91,7 +91,7 @@ def tryPropertyAssign(parser: Parser): ParseResult = withCtx(parser) {
     if (!parser.peek(lex.Tag.`.`, lex.Tag.id, lex.Tag.`=`)) { boundary.break(result(None)) }
 
     parser.eatTokens(1)
-    val id = Ast.Id(parser.srcContentT(parser.nextToken())).withSpan(parser.currentSpan())
+    val id = parser.srcContentT(parser.nextToken())
 
     if (!parser.eatToken(lex.Tag.`=`)) boundary
       .break(result(parser.invalidTerm("=", "expected '=' after property name")))

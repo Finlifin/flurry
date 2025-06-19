@@ -1,0 +1,6 @@
+[book]
+authors = ["Finlifin"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Flurry语言手册"

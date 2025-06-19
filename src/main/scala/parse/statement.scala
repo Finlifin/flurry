@@ -40,6 +40,7 @@ def tryStatement(parser: Parser): ParseResult = withCtx(parser) {
     case lex.Tag.k_decreases => tryPrefixTerm(parser, Tag.decreases, lex.Tag.k_decreases, tryExpr)
 
     case lex.Tag.k_return => tryReturnStatement(parser)
+    case lex.Tag.k_resume => tryResumeStatement(parser)
 
     case lex.Tag.k_break => tryJumpStatement(parser, Tag.break_statement, lex.Tag.k_break)
     case lex.Tag.k_continue => tryJumpStatement(parser, Tag.continue_statement, lex.Tag.k_continue)
@@ -64,7 +65,7 @@ def tryFileScope(parser: Parser): ParseResult = withCtx(parser) {
     Rule("statement", tryStatement, lex.Tag.`;`)
   ) match
     case Left(err) => result(err)
-    case Right(nodes) => result(Ast.FileScope(nodes.toMList).withSpan(parser.currentSpan()))
+    case Right(nodes) => result(Ast.FileScope(nodes).withSpan(parser.currentSpan()))
 }
 
 // def tryQualifiedBlock(parser: Parser, tag: Tag, keywordTag: lex.Tag): ParseResult = withCtx(parser, Some(keywordTag)) {
@@ -88,13 +89,18 @@ def tryBlock(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.`{`), t
     Rule("statement", tryStatement, lex.Tag.`;`)
   ) match
     case Left(err) => result(err)
-    case Right(nodes) => result(Ast.Block(nodes.toMList).withSpan(parser.currentSpan()))
+    case Right(nodes) => result(Ast.Block(nodes).withSpan(parser.currentSpan()))
 }
 
 private def tryDecl(parser: Parser, tag: Tag, keywordTag: lex.Tag): ParseResult = withCtx(parser, Some(keywordTag)) {
   boundary[ParseResult] {
+    var attrs: mutable.Map[String, Ast] = mutable.Map()
+    if (parser.eatToken(lex.Tag.k_async)) attrs += ("flurry_async" -> Ast.Bool(true).withSpan(parser.currentSpan()))
+    if (parser.eatToken(lex.Tag.k_handles)) attrs += ("flurry_handles" -> Ast.Bool(true).withSpan(parser.currentSpan()))
+
     val pattern = tryPattern(parser) match
       case Right(Some(id)) => id
+      case Left(err) => boundary.break(result(err))
       case _ => Ast.Id("").withSpan(parser.currentSpan())
 
     var typeNode: Ast =
@@ -109,14 +115,16 @@ private def tryDecl(parser: Parser, tag: Tag, keywordTag: lex.Tag): ParseResult 
         case Right(Some(expr)) => expr
         case Right(None) => Ast.Id("").withSpan(parser.currentSpan())
         case Left(err) => boundary.break(result(err))
-      else Ast.Id("").withSpan(parser.currentSpan())
+      else Ast.Invalid.withSpan(parser.currentSpan())
 
     val declNode = tag match
       case Tag.const_decl => Ast.ConstDecl(pattern, typeNode, init)
       case Tag.let_decl => Ast.LetDecl(pattern, typeNode, init)
-      case _ => Ast.Id("").withSpan(parser.currentSpan())
+      case _ => Ast.Invalid
 
-    result(declNode.withSpan(parser.currentSpan()))
+    if (attrs.nonEmpty)
+      result(Ast.Attribute(Ast.Object(attrs.map(Ast.Property(_, _)).toList), declNode).withSpan(parser.currentSpan()))
+    else result(declNode.withSpan(parser.currentSpan()))
   }
 }
 
@@ -208,6 +216,25 @@ def tryReturnStatement(parser: Parser): ParseResult = withCtx(parser, Some(lex.T
   }
 }
 
+// resume -> resume expr? if_guard?
+def tryResumeStatement(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_resume)) {
+  boundary[ParseResult] {
+    var expr: Ast = tryExpr(parser) match
+      case Right(Some(node)) => node
+      case Left(error) => boundary.break(result(error))
+      case _ => Ast.Invalid
+
+    val guardExpr =
+      if (parser.eatToken(lex.Tag.k_if)) tryExpr(parser) match
+        case Right(Some(expr)) => expr
+        case Right(None) => Ast.Invalid
+        case Left(error) => boundary.break(result(error))
+      else Ast.Invalid
+
+    result(Ast.ResumeStatement(expr, guardExpr).withSpan(parser.currentSpan()))
+  }
+}
+
 // condition_branch -> expr => stmt | block
 def tryConditionBranch(parser: Parser): ParseResult = withCtx(parser) {
   boundary[ParseResult] {
@@ -282,7 +309,7 @@ def tryWhenStatement(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag
   boundary[ParseResult] {
     val branches =
       tryMulti(parser, Some(lex.Tag.`{`), "parsing when branches", Rule("condition_branch", tryConditionBranch)) match
-        case Right(nodes) => nodes.toMList
+        case Right(nodes) => nodes
         case Left(error) => boundary.break(result(error))
 
     result(Ast.WhenStatement(branches).withSpan(parser.currentSpan()))
@@ -328,7 +355,7 @@ def tryIfStatement(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k
 private def parseIfIsOrIfMatch(parser: Parser, expr: Ast): ParseResult = boundary[ParseResult] {
   if (parser.eatToken(lex.Tag.k_do))
     tryMulti(parser, Some(lex.Tag.`{`), "parsing if branches", Rule("pattern_branch", tryPatternBranch)) match
-      case Right(nodes) => result(Ast.IfMatch(expr, nodes.toMList).withSpan(parser.currentSpan()))
+      case Right(nodes) => result(Ast.IfMatch(expr, nodes).withSpan(parser.currentSpan()))
       case Left(error) => boundary.break(result(error))
   else tryPattern(parser) match
     case Right(Some(pattern)) =>
@@ -402,7 +429,7 @@ def tryWhileLoop(parser: Parser): ParseResult = withCtx(parser, Some(lex.Tag.k_w
 private def parseWhileIsOrWhileMatch(label: String, parser: Parser, expr: Ast): ParseResult = boundary[ParseResult] {
   if (parser.eatToken(lex.Tag.k_do))
     tryMulti(parser, Some(lex.Tag.`{`), "parsing while branches", Rule("pattern_branch", tryPatternBranch)) match
-      case Right(nodes) => result(Ast.WhileMatch(label, expr, nodes.toMList).withSpan(parser.currentSpan()))
+      case Right(nodes) => result(Ast.WhileMatch(label, expr, nodes).withSpan(parser.currentSpan()))
       case Left(error) => boundary.break(result(error))
   else tryPattern(parser) match
     case Right(Some(pattern)) =>

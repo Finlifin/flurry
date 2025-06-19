@@ -1,11 +1,6 @@
 package parse
 
 import lex.dumpTokens
-import scala.collection.mutable
-
-type MList[T] = mutable.ListBuffer[T]
-// List[T] to mutable.ListBuffer[T]
-extension [T](list: List[T]) def toMList: MList[T] = mutable.ListBuffer(list*)
 
 case class Span(start: Int, end: Int)
 
@@ -35,13 +30,12 @@ enum Ast:
 
   // 容器和括号表达式
   case ExprFromPattern(pattern: Ast)
-  case List(elements: MList[Ast])
-  case Tuple(elements: MList[Ast])
-  case Parenthesis(expr: Ast)
+  case ListOf(elements: List[Ast])
+  case Tuple(elements: List[Ast])
   case Unit
-  case Object(properties: MList[Ast])
-  case Lambda(params: MList[String], body: Ast)
-  case LambdaWithType(params: MList[String], returnType: Ast, body: Ast)
+  case Object(properties: List[Ast])
+  case Lambda(params: List[Ast], returnType: Ast, body: Ast)
+  case LambdaWithType(params: List[String], returnType: Ast, body: Ast)
 
   // 布尔操作
   case BoolNot(expr: Ast)
@@ -52,8 +46,8 @@ enum Ast:
   case OptionalType(typ: Ast)
   case TraitObjectType(traitExpr: Ast)
   case PointerType(typ: Ast)
-  case ForallType(params: MList[Ast], expr: Ast)
-  case ForType(params: MList[Ast], expr: Ast)
+  case ForallType(params: List[Ast], expr: Ast)
+  case ForType(params: List[Ast], expr: Ast)
 
   // 范围操作
   case RangeTo(end: Ast)
@@ -80,6 +74,8 @@ enum Ast:
   case BoolImplies(left: Ast, right: Ast)
   case BoolMatches(left: Ast, right: Ast)
 
+  case Arrow(left: Ast, right: Ast) // 用于函数类型或箭头表达式
+
   // 类型关系
   case TypeWith(expr: Ast, typ: Ast)
   case SubtypeWith(expr: Ast, supertype: Ast)
@@ -99,32 +95,31 @@ enum Ast:
   case Await(expr: Ast)
   case HandlerApply(expr: Ast, handler: Ast)
   case TypeCast(expr: Ast, typ: Ast)
-  case AsDyn(expr: Ast, typ: Ast)
+  case AsDyn(expr: Ast, traitVal: Ast)
 
   // 消除操作
-  case EffectElimination(expr: Ast, branches: MList[Ast])
-  case ErrorElimination(expr: Ast, branches: MList[Ast])
+  case EffectElimination(expr: Ast, branches: List[Ast])
+  case ErrorElimination(expr: Ast, branches: List[Ast])
   case OptionElimination(expr: Ast, block: Ast)
   case EffectPropagation(left: Ast)
   case ErrorPropagation(left: Ast)
   case OptionPropagation(left: Ast)
 
   // 函数和调用
-  case Call(func: Ast, args: MList[Ast])
+  case Call(func: Ast, args: List[Ast])
   case IndexCall(array: Ast, index: Ast)
-  case ObjectCall(obj: Ast, childrenOrProperties: MList[Ast])
-  case DiamondCall(generic: Ast, typeArgs: MList[Ast])
+  case ObjectCall(obj: Ast, childrenOrProperties: List[Ast])
+  case DiamondCall(generic: Ast, typeArgs: List[Ast])
 
   // 匹配
-  case Match(expr: Ast, branches: MList[Ast])
-  case PostMatch(expr: Ast, branches: MList[Ast])
+  case PostMatch(expr: Ast, branches: List[Ast])
   case PatternBranch(pattern: Ast, body: Ast)
   case ConditionBranch(condition: Ast, body: Ast)
   case CatchBranch(errorName: String, body: Ast)
 
   // 属性
-  case Property(id: Ast, value: Ast)
-  case PropertyAssign(id: Ast, value: Ast)
+  case Property(id: String, value: Ast)
+  case PropertyAssign(id: String, value: Ast)
 
   // 模式
   case PatternIfGuard(pattern: Ast, condition: Ast)
@@ -133,11 +128,10 @@ enum Ast:
   case PatternOr(left: Ast, right: Ast)
   case PatternOptionSome(pattern: Ast)
   case PatternErrorOk(pattern: Ast)
-  case PatternCall(pattern: Ast, args: MList[Ast])
-  case PatternObjectCall(pattern: Ast, fields: MList[Ast])
-  case PatternDiamondCall(pattern: Ast, typeArgs: MList[Ast])
+  case PatternCall(pattern: Ast, args: List[Ast])
+  case PatternObjectCall(pattern: Ast, fields: List[Ast])
+  case PatternDiamondCall(pattern: Ast, typeArgs: List[Ast])
 
-  // 附加模式类型
   case PatternFromExpr(expr: Ast)
   case PatternRangeTo(end: Ast)
   case PatternRangeToInclusive(end: Ast)
@@ -145,12 +139,12 @@ enum Ast:
   case PatternRangeFromTo(start: Ast, end: Ast)
   case PatternRangeFromToInclusive(start: Ast, end: Ast)
   case PropertyPattern(id: Ast, pattern: Ast)
-  case PatternRecord(fields: MList[Ast])
-  case PatternList(items: MList[Ast])
-  case PatternTuple(items: MList[Ast])
-  case PatternBitVec0x(items: MList[Ast])
-  case PatternBitVec0o(items: MList[Ast])
-  case PatternBitVec0b(items: MList[Ast])
+  case PatternRecord(fields: List[Ast])
+  case PatternList(items: List[Ast])
+  case PatternTuple(items: List[Ast])
+  case PatternBitVec0x(items: List[Ast])
+  case PatternBitVec0o(items: List[Ast])
+  case PatternBitVec0b(items: List[Ast])
   case PatternAsync(pattern: Ast)
   case PatternNot(pattern: Ast)
   case PatternTypeBind(id: Ast)
@@ -160,26 +154,27 @@ enum Ast:
   case ConstDecl(pattern: Ast, typ: Ast, init: Ast)
   case LetDecl(pattern: Ast, typ: Ast, init: Ast)
   case ReturnStatement(expr: Ast, guard: Ast)
+  case ResumeStatement(expr: Ast, guard: Ast)
   case BreakStatement(label: Ast, guard: Ast)
   case ContinueStatement(label: Ast, guard: Ast)
   case IfStatement(condition: Ast, thenBlock: Ast, elseBlock: Ast)
   case IfIsMatch(expr: Ast, pattern: Ast, body: Ast, elseBlock: Ast)
-  case IfMatch(expr: Ast, branches: MList[Ast])
-  case WhenStatement(branches: MList[Ast])
+  case IfMatch(expr: Ast, branches: List[Ast])
+  case WhenStatement(branches: List[Ast])
   case WhileLoop(label: String, condition: Ast, body: Ast)
   case WhileIsMatch(label: String, expr: Ast, pattern: Ast, body: Ast)
-  case WhileMatch(label: String, expr: Ast, branches: MList[Ast])
+  case WhileMatch(label: String, expr: Ast, branches: List[Ast])
   case ForLoop(label: String, pattern: Ast, expr: Ast, body: Ast)
   case UseStatement(expr: Ast)
   case PathSelect(path: Ast, symbol: String)
-  case PathSelectMulti(path: Ast, symbols: MList[String])
+  case PathSelectMulti(path: Ast, symbols: List[String])
   case PathSelectAll(path: Ast)
   case SuperPath(path: Ast)
   case ExcludePath(symbol: String)
   case PackagePath(path: Ast)
   case PathAsBind(path: Ast, symbol: String)
 
-  case Block(statements: MList[Ast])
+  case Block(statements: List[Ast])
 
   case Assign(location: Ast, value: Ast)
 
@@ -210,32 +205,34 @@ enum Ast:
   case ClauseTypeDecl(id: String)
 
   // 定义
-  case FunctionDef(id: String, params: MList[Ast], returnType: Ast, clauses: MList[Ast], body: Ast)
+  case FunctionDef(id: String, params: List[Ast], returnType: Ast, clauses: List[Ast], body: Ast)
+  case EffectDef(id: String, params: List[Ast], returnType: Ast, clauses: List[Ast])
+  case HandlesDef(errorHandling: Boolean, effects: Ast, params: List[Ast], clauses: List[Ast], body: Ast)
 
-  case StructDef(id: String, clauses: MList[Ast], body: MList[Ast])
+  case StructDef(id: String, clauses: List[Ast], body: List[Ast])
   case StructField(id: String, typ: Ast, default: Ast)
 
-  case EnumDef(id: String, clauses: MList[Ast], body: MList[Ast])
+  case EnumDef(id: String, clauses: List[Ast], body: List[Ast])
   case EnumVariantWithPattern(id: String, pattern: Ast)
-  case EnumVariantWithTuple(id: String, types: MList[Ast])
-  case EnumVariantWithStruct(id: String, fields: MList[Ast])
-  case EnumVariantWithSubEnum(id: String, variants: MList[Ast])
+  case EnumVariantWithTuple(id: String, types: List[Ast])
+  case EnumVariantWithStruct(id: String, fields: List[Ast])
+  case EnumVariantWithSubEnum(id: String, variants: List[Ast])
 
-  case UnionDef(id: String, clauses: MList[Ast], body: MList[Ast])
+  case UnionDef(id: String, clauses: List[Ast], body: List[Ast])
   case UnionVariant(id: String, typ: Ast)
 
-  case TraitDef(id: String, clauses: MList[Ast], body: MList[Ast])
-  case ImplDef(traitExpr: Ast, forType: Ast, clauses: MList[Ast], body: MList[Ast])
-  case ExtendDef(traitExpr: Ast, forType: Ast, clauses: MList[Ast], body: MList[Ast])
-  case DeriveDef(traitExprs: MList[Ast], forType: Ast, clauses: MList[Ast])
+  case TraitDef(id: String, clauses: List[Ast], body: List[Ast])
+  case ImplDef(traitExpr: Ast, forType: Ast, clauses: List[Ast], body: List[Ast])
+  case ExtendDef(traitExpr: Ast, forType: Ast, clauses: List[Ast], body: List[Ast])
+  case DeriveDef(traitExprs: List[Ast], forType: Ast, clauses: List[Ast])
 
-  case Typealias(id: String, params: MList[Ast], typ: Ast)
-  case Newtype(id: String, params: MList[Ast], typ: Ast)
+  case Typealias(id: String, params: List[Ast], typ: Ast)
+  case Newtype(id: String, params: List[Ast], typ: Ast)
 
-  case ModuleDef(id: String, clauses: MList[Ast], items: MList[Ast])
+  case ModuleDef(id: String, clauses: List[Ast], items: List[Ast])
 
   // 顶层
-  case FileScope(items: MList[Ast])
+  case FileScope(items: List[Ast])
   // sub module 文件声明
   case ModFile(filename: String)
 
@@ -267,12 +264,11 @@ enum Ast:
     case SelfType => "Self"
 
     case ExprFromPattern(pattern) => s"(expr-from-pattern $pattern)"
-    case List(elements) => s"(list ${elements.mkString(" ")})"
+    case ListOf(elements) => s"(list ${elements.mkString(" ")})"
     case Tuple(elements) => s"(tuple ${elements.mkString(" ")})"
-    case Parenthesis(expr) => s"(parenthesis $expr)"
     case Unit => "(unit)"
-    case Object(properties) => s"(record ${properties.mkString(" ")})"
-    case Lambda(params, body) => s"(lambda (${params.mkString(" ")}) $body)"
+    case Object(properties) => s"(object ${properties.mkString(" ")})"
+    case Lambda(params, returnType, body) => s"(lambda ${params.mkString(" ")} (-> $returnType) $body)"
     case LambdaWithType(params, returnType, body) => s"(lambda (${params.mkString(" ")}) : $returnType $body)"
 
     case BoolNot(expr) => s"(not $expr)"
@@ -308,6 +304,8 @@ enum Ast:
     case BoolImplies(left, right) => s"(==> $left $right)"
     case BoolMatches(left, right) => s"(matches $left $right)"
 
+    case Arrow(left, right) => s"(-> $left $right)"
+
     case TypeWith(expr, typ) => s"(: $expr $typ)"
     case SubtypeWith(expr, supertype) => s"(<: $expr $supertype)"
     case TraitBound(expr, traitExpr) => s"(:- $expr $traitExpr)"
@@ -338,7 +336,6 @@ enum Ast:
     case ObjectCall(caller, childrenOrProperties) => s"(obj-call $caller ${childrenOrProperties.mkString(" ")})"
     case DiamondCall(caller, typeArgs) => s"(diamond-call $caller ${typeArgs.mkString(" ")})"
 
-    case Match(expr, branches) => s"(match $expr ${branches.mkString(" ")})"
     case PostMatch(expr, branches) => s"(post-match $expr ${branches.mkString(" ")})"
     case PatternBranch(pattern, body) => s"(pattern-branch $pattern $body)"
     case ConditionBranch(condition, body) => s"(condition-branch $condition $body)"
@@ -381,6 +378,7 @@ enum Ast:
       val typeStr = if typ == null then "" else s" $typ"
       s"(let $pattern$typeStr $init)"
     case ReturnStatement(expr, guard) => if guard == null then s"(return $expr)" else s"(return $expr $guard)"
+    case ResumeStatement(expr, guard) => if guard == null then s"(resume $expr)" else s"(resume $expr $guard)"
     case BreakStatement(label, guard) =>
       if label == null then if guard == null then "(break)" else s"(break $guard)"
       else if guard == null then s"(break $label)"
@@ -449,6 +447,12 @@ enum Ast:
     case FunctionDef(id, params, returnType, clauses, body) =>
       val clausesStr = if clauses.isEmpty then "" else s" (${clauses.mkString(" ")})"
       s"(fn $id (${params.mkString(" ")}) $returnType$clausesStr $body)"
+    case EffectDef(id, params, returnType, clauses) =>
+      val clausesStr = if clauses.isEmpty then "" else s" (${clauses.mkString(" ")})"
+      s"(effect $id (${params.mkString(" ")}) $returnType $clausesStr)"
+    case HandlesDef(errorHandling, effects, params, clauses, body) =>
+      val clausesStr = if clauses.isEmpty then "" else s" (${clauses.mkString(" ")})"
+      s"(handles ${if (errorHandling) "error" else ""} $effects (${params.mkString(" ")})$clausesStr $body)"
     case StructDef(id, clauses, body) =>
       val clausesStr = if clauses.isEmpty then "" else s" (${clauses.mkString(" ")})"
       s"(struct $id$clausesStr (${body.mkString(" ")}))"

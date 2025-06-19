@@ -1,4 +1,0 @@
-struct Student {
-    name: String,
-    age: u32,
-}
