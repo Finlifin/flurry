@@ -6,7 +6,7 @@ import vfs.VfsNode
 import scala.collection.mutable
 import QueryTypes.*
 
-// Type Environment for contextual typing
+// Type Environment for contextual typing - now used for HIR type checking
 case class TypeEnv(vars: Map[String, Hir] = Map.empty, parent: Option[TypeEnv] = None):
   def lookup(name: String): Option[Hir] = vars.get(name).orElse(parent.flatMap(_.lookup(name)))
   def extend(name: String, ty: Hir): TypeEnv = copy(vars = vars + (name -> ty))
@@ -152,317 +152,306 @@ def unifyLists(types1: List[Hir], types2: List[Hir]): Either[FlurryError, TypeSu
     }
   }
 
-// Main contextual typing interface - refactored as object methods
+def checkUnify(actual: Hir, expected: Hir): Either[FlurryError, Unit] = unify(actual, expected).map(_ => ())
+
+// Main contextual typing interface - now works on HIR instead of AST
 object ContextualTyper:
 
-  // Convert AST to Hir for type annotations
-  def astToType(ast: Ast, engine: QueryEngine, scope: ScopeId): Either[FlurryError, Hir] = ast match
-    case Ast.Id(name) => name match
-        case "Int" => Right(Hir.TypeInteger)
-        case "Real" => Right(Hir.TypeReal)
-        case "String" => Right(Hir.TypeStr)
-        case "Bool" => Right(Hir.TypeBool)
-        case "Char" => Right(Hir.TypeChar)
-        case "Unit" => Right(Hir.TypeVoid)
-        case "Void" => Right(Hir.TypeNoReturn)
-        case _ =>
-          // Try to resolve as type variable from scope
+  // Type check HIR expressions - the main entry point
+  def checkType(
+      hir: Hir,
+      env: TypeEnv,
+      context: TypingContext,
+      engine: QueryEngine,
+      scope: ScopeId
+  ): Either[FlurryError, Hir] = hir match
+
+    // Literals - already typed correctly
+    case i @ Hir.Integer(_) => Right(i)
+    case r @ Hir.Real(_) => Right(r)
+    case s @ Hir.Str(_) => Right(s)
+    case b @ Hir.Bool(_) => Right(b)
+    case c @ Hir.CharVal(_) => Right(c)
+    case sym @ Hir.Symbol(_) => Right(sym)
+    case Hir.NullVal => Right(Hir.NullVal)
+    case Hir.UndefinedVal => Right(Hir.UndefinedVal)
+
+    // Type constructors
+    case ty @ (Hir.TypeInteger | Hir.TypeReal | Hir.TypeStr | Hir.TypeBool | Hir.TypeChar | Hir.TypeSymbol | Hir
+          .TypeVoid | Hir.TypeNoReturn | Hir.TypeAny | Hir.TypeObject | Hir.TypeType) => Right(ty)
+
+    // Variables and type variables
+    case Hir.TypeVar(name) => env.lookup(name) match
+        case Some(ty) => Right(ty)
+        case None =>
+          // Try to resolve from scope
           engine.execute[NameResolutionResult](ResolveNameQuery(name, scope)) match
             case Right(NameResolutionResult(symbol, _)) => Right(symbol.hir)
-            case Left(_) => Right(Hir.TypeVar(name)) // Type variable
+            case Left(_) => Right(hir) // Keep as type variable if not found
 
-    case Ast.OptionalType(inner) => astToType(inner, engine, scope).map(Hir.TypeOption.apply)
-
-    case Ast.PointerType(inner) => astToType(inner, engine, scope).map(Hir.TypePointer.apply)
-
-    case Ast.ListOf(List(elemType)) => astToType(elemType, engine, scope)
-        .map(elemTy => Hir.TypeApplication(Hir.TypeVar("List"), List(elemTy)))
-
-    case Ast.Tuple(elements) => elements.traverse(astToType(_, engine, scope)).map(Hir.Tuple(_))
-
-    case Ast.ForallType(params, body) =>
-      val paramResults = params.traverse {
-        case Ast.Id(name) => Right(Hir.TypeVar(name))
-        case _ => Left(TypeError("Invalid type parameter in forall"))
-      }
-
+    // Function definitions
+    case func @ Hir.FunctionDef(name, params, returnType, clauses, body, ty) =>
       for
-        paramTypes <- paramResults
-        bodyTy <- astToType(body, engine, scope)
-      yield Hir.TypeScheme(paramTypes, bodyTy)
-
-    case Ast.EffectQualifiedType(effect, returnType) =>
-      for
-        effTy <- astToType(effect, engine, scope)
-        retTy <- astToType(returnType, engine, scope)
-      yield Hir.TypeWithEffects(effTy, retTy)
-
-    case Ast.ErrorQualifiedType(error, returnType) =>
-      for
-        errTy <- astToType(error, engine, scope)
-        retTy <- astToType(returnType, engine, scope)
-      yield Hir.TypeWithErrors(errTy, retTy)
-
-    case _ => Left(TypeError(s"Cannot convert AST node to type: $ast"))
-
-  // Bidirectional type inference with context - now using QueryEngine
-  def inferType(
-      ast: Ast,
-      env: TypeEnv,
-      context: TypingContext,
-      engine: QueryEngine,
-      scope: ScopeId,
-      file: VfsNode
-  ): Either[FlurryError, (Hir, Hir)] = ast match
-    // Literals
-    case Ast.Integer(value) => Right((Hir.TypeInteger, Hir.Integer(BigInt(value))))
-    case Ast.Real(value) => Right((Hir.TypeReal, Hir.Real(BigDecimal(value))))
-    case Ast.Str(value) => Right((Hir.TypeStr, Hir.Str(value)))
-    case Ast.Bool(value) => Right((Hir.TypeBool, Hir.Bool(value)))
-    case Ast.LitChar(value) => Right((Hir.TypeChar, Hir.CharVal(value)))
-    case Ast.Unit => Right((Hir.TypeVoid, Hir.Invalid))
-    case Ast.NullVal => Right((Hir.TypeVoid, Hir.Invalid))
-
-    // Variables - use QueryEngine for name resolution
-    case Ast.Id(name) =>
-      // First check local environment
-      env.lookup(name) match
-        case Some(ty) => Right((ty, Hir.TypeVar(name)))
-        case None =>
-          // Fall back to scope-based resolution
-          engine.execute[NameResolutionResult](ResolveNameQuery(name, scope)) match
-            case Right(NameResolutionResult(symbol, _)) => Right((symbol.hir, Hir.TypeVar(name)))
-            case Left(_) => Left(UndefinedVariableError(name, getSourceLocation(ast, file)))
-
-    // Function calls with contextual argument typing
-    case Ast.Call(func, args) => inferFunctionCall(func, args, env, context, engine, scope, file)
-
-    // Lambda expressions
-    case Ast.Lambda(params, returnType, body) =>
-      inferLambda(params, returnType, body, env, context, engine, scope, file)
-
-    // Let declarations
-    case Ast.LetDecl(pattern, typ, init) =>
-      for
-        initType <- astToType(typ, engine, scope)
-        (actualType, initHir) <- inferType(init, env, TypingContext.TypeExpectation(initType), engine, scope, file)
-        _ <- checkUnify(actualType, initType)
-        patternName <- extractPatternName(pattern)
-        newEnv = env.extend(patternName, initType)
-      yield (Hir.TypeVoid, Hir.Assign(Hir.TypeVar(patternName), initHir))
-
-    // Tuples
-    case Ast.Tuple(elements) =>
-      for
-        results <- elements.traverse(inferType(_, env, TypingContext.EmptyContext, engine, scope, file))
-        (types, hirs) = results.unzip
-      yield (Hir.Tuple(types), Hir.Tuple(hirs))
-
-    // Lists
-    case Ast.ListOf(elements) => elements match
-        case Nil =>
-          val (elemVar, _) = InferenceState().freshTypeVar()
-          Right((Hir.TypeApplication(Hir.TypeVar("List"), List(elemVar)), Hir.Object(Nil, Map.empty)))
-        case head :: tail =>
+        // Check parameter types
+        checkedParams <- params.traverse { case param @ Hir.Param(paramName, paramType, default) =>
           for
-            (headType, headHir) <- inferType(head, env, TypingContext.EmptyContext, engine, scope, file)
-            results <- tail.traverse(inferType(_, env, TypingContext.TypeExpectation(headType), engine, scope, file))
-            (_, tailHirs) = results.unzip
-          yield (Hir.TypeApplication(Hir.TypeVar("List"), List(headType)), Hir.Object(headHir :: tailHirs, Map.empty))
+            checkedParamType <- checkType(paramType, env, TypingContext.EmptyContext, engine, scope)
+            checkedDefault <- checkType(default, env, TypingContext.EmptyContext, engine, scope)
+          yield Hir.Param(paramName, checkedParamType, checkedDefault)
+        }
+        // Check return type
+        checkedReturnType <- checkType(returnType, env, TypingContext.EmptyContext, engine, scope)
+        // Create environment with parameters - use the original params for type environment
+        paramEnv = params.foldLeft(env) { (acc, param) =>
+          param match
+            case Hir.Param(paramName, paramType, _) => acc.extend(paramName, paramType)
+        }
+        // Check body with expected return type
+        checkedBody <- checkType(body, paramEnv, TypingContext.TypeExpectation(checkedReturnType), engine, scope)
+        // Check clauses if any
+        checkedClauses <- clauses
+          .traverse(clause => checkType(clause, paramEnv, TypingContext.EmptyContext, engine, scope))
+      yield func.copy(
+        params = checkedParams.collect { case p: Hir.Param => p },
+        returnType = checkedReturnType,
+        clauses = checkedClauses,
+        body = checkedBody
+      )
+
+    // Function applications
+    case app @ Hir.Application(callee, args) =>
+      for
+        checkedCallee <- checkType(callee, env, TypingContext.EmptyContext, engine, scope)
+        calleeType <- inferType(checkedCallee, env, engine, scope)
+        result <- calleeType match
+          case Hir.TypeFunction(_, _, _, paramTypes, returnType) =>
+            // Extract args from Object
+            val argList = args.children
+
+            if argList.length != paramTypes.length then
+              Left(TypeError(s"Function expects ${paramTypes.length} arguments, got ${argList.length}"))
+            else
+              for
+                checkedArgs <- argList.zip(paramTypes).traverse((arg, expectedType) =>
+                  checkType(arg, env, TypingContext.TypeExpectation(expectedType), engine, scope)
+                )
+                checkedArgsObj: Hir.Object = Hir.Object(checkedArgs, args.properties)
+              yield app.copy(callee = checkedCallee, args = checkedArgsObj)
+          case _ => Left(TypeError(s"Cannot call non-function type: $calleeType"))
+      yield result
 
     // Binary operations
-    case Ast.Add(left, right) =>
-      inferBinaryOp(left, right, Hir.TypeInteger, env, context, BinaryOp.Add, engine, scope, file)
-    case Ast.Sub(left, right) =>
-      inferBinaryOp(left, right, Hir.TypeInteger, env, context, BinaryOp.Sub, engine, scope, file)
-    case Ast.Mul(left, right) =>
-      inferBinaryOp(left, right, Hir.TypeInteger, env, context, BinaryOp.Mul, engine, scope, file)
-    case Ast.Div(left, right) =>
-      inferBinaryOp(left, right, Hir.TypeInteger, env, context, BinaryOp.Div, engine, scope, file)
-    case Ast.Mod(left, right) =>
-      inferBinaryOp(left, right, Hir.TypeInteger, env, context, BinaryOp.Mod, engine, scope, file)
+    case binOp @ Hir.BinaryApplication(op, lhs, rhs) =>
+      val expectedType = inferBinaryOpType(op)
+      for
+        checkedLeft <- checkType(lhs, env, TypingContext.TypeExpectation(expectedType), engine, scope)
+        checkedRight <- checkType(rhs, env, TypingContext.TypeExpectation(expectedType), engine, scope)
+        leftType <- inferType(checkedLeft, env, engine, scope)
+        rightType <- inferType(checkedRight, env, engine, scope)
+        _ <- checkUnify(leftType, expectedType)
+        _ <- checkUnify(rightType, expectedType)
+      yield binOp.copy(lhs = checkedLeft, rhs = checkedRight)
 
-    case Ast.BoolEq(left, right) => inferComparisonOp(left, right, env, context, BinaryOp.Eq, engine, scope, file)
-    case Ast.BoolNotEq(left, right) => inferComparisonOp(left, right, env, context, BinaryOp.Neq, engine, scope, file)
-    case Ast.BoolGt(left, right) => inferComparisonOp(left, right, env, context, BinaryOp.Gt, engine, scope, file)
-    case Ast.BoolGtEq(left, right) => inferComparisonOp(left, right, env, context, BinaryOp.Ge, engine, scope, file)
-    case Ast.BoolLt(left, right) => inferComparisonOp(left, right, env, context, BinaryOp.Lt, engine, scope, file)
-    case Ast.BoolLtEq(left, right) => inferComparisonOp(left, right, env, context, BinaryOp.Le, engine, scope, file)
+    // Unary operations
+    case unOp @ Hir.UnaryApplication(op, operand) =>
+      val expectedType = inferUnaryOpType(op)
+      for
+        checkedOperand <- checkType(operand, env, TypingContext.TypeExpectation(expectedType), engine, scope)
+        operandType <- inferType(checkedOperand, env, engine, scope)
+        _ <- checkUnify(operandType, expectedType)
+      yield unOp.copy(operand = checkedOperand)
 
-    case Ast.BoolAnd(left, right) =>
-      inferBinaryOp(left, right, Hir.TypeBool, env, context, BinaryOp.And, engine, scope, file)
-    case Ast.BoolOr(left, right) =>
-      inferBinaryOp(left, right, Hir.TypeBool, env, context, BinaryOp.Or, engine, scope, file)
-    case Ast.BoolNot(expr) => inferUnaryOp(expr, Hir.TypeBool, env, context, UnaryOp.Not, engine, scope, file)
+    // Tuples
+    case tuple @ Hir.Tuple(elements, metadata) =>
+      for checkedElements <- elements.traverse(elem => checkType(elem, env, TypingContext.EmptyContext, engine, scope))
+      yield tuple.copy(elements = checkedElements)
+
+    // Blocks
+    case block @ Hir.Block(statements) =>
+      // Type check each statement in sequence, threading environment
+      statements.foldLeft(Right((env, List.empty[Hir])): Either[FlurryError, (TypeEnv, List[Hir])]) {
+        case (Right((currentEnv, checkedStmts)), stmt) =>
+          checkType(stmt, currentEnv, TypingContext.EmptyContext, engine, scope) match
+            case Right(checkedStmt) =>
+              // Update environment if this is a binding
+              val newEnv = stmt match
+                case Hir.Assign(Hir.TypeVar(name), _) => inferType(checkedStmt, currentEnv, engine, scope) match
+                    case Right(stmtType) => currentEnv.extend(name, stmtType)
+                    case Left(_) => currentEnv
+                case _ => currentEnv
+              Right((newEnv, checkedStmts :+ checkedStmt))
+            case Left(error) => Left(error)
+        case (Left(error), _) => Left(error)
+      }.map { case (_, checkedStmts) => block.copy(statements = checkedStmts) }
 
     // If expressions
-    case Ast.IfStatement(cond, thenBranch, elseBranch) =>
+    case ifExpr @ Hir.If(condition, thenBranch, elseBranch) =>
       for
-        (condType, condHir) <- inferType(cond, env, TypingContext.TypeExpectation(Hir.TypeBool), engine, scope, file)
+        checkedCondition <- checkType(condition, env, TypingContext.TypeExpectation(Hir.TypeBool), engine, scope)
+        condType <- inferType(checkedCondition, env, engine, scope)
         _ <- checkUnify(condType, Hir.TypeBool)
-        (thenType, thenHir) <- inferType(thenBranch, env, context, engine, scope, file)
-        (elseType, elseHir) <- inferType(elseBranch, env, TypingContext.TypeExpectation(thenType), engine, scope, file)
+        checkedThenBranch <- checkType(thenBranch, env, context, engine, scope)
+        thenType <- inferType(checkedThenBranch, env, engine, scope)
+        checkedElseBranch <- checkType(elseBranch, env, TypingContext.TypeExpectation(thenType), engine, scope)
+        elseType <- inferType(checkedElseBranch, env, engine, scope)
         _ <- checkUnify(thenType, elseType)
-      yield (thenType, Hir.If(condHir, thenHir, elseHir))
+      yield ifExpr.copy(condition = checkedCondition, thenBranch = checkedThenBranch, elseBranch = checkedElseBranch)
 
-    // Type annotations - use checking mode
-    case Ast.TypeWith(expr, typeAst) =>
+    // Assignments
+    case assign @ Hir.Assign(target, value) => context match
+        case TypingContext.TypeExpectation(expectedType) =>
+          for
+            checkedValue <- checkType(value, env, TypingContext.TypeExpectation(expectedType), engine, scope)
+            valueType <- inferType(checkedValue, env, engine, scope)
+            _ <- checkUnify(valueType, expectedType)
+          yield assign.copy(rhs = checkedValue)
+        case _ =>
+          for checkedValue <- checkType(value, env, TypingContext.EmptyContext, engine, scope)
+          yield assign.copy(rhs = checkedValue)
+
+    // Type constructors with parameters
+    case Hir.TypeFunction(isPure, isComptime, isDiamond, params, returnType) =>
       for
-        expectedType <- astToType(typeAst, engine, scope)
-        (inferredType, hir) <- inferType(expr, env, TypingContext.TypeExpectation(expectedType), engine, scope, file)
-        _ <- checkUnify(inferredType, expectedType)
-      yield (expectedType, hir)
+        checkedParams <- params.traverse(param => checkType(param, env, TypingContext.EmptyContext, engine, scope))
+        checkedReturnType <- checkType(returnType, env, TypingContext.EmptyContext, engine, scope)
+      yield Hir.TypeFunction(isPure, isComptime, isDiamond, checkedParams, checkedReturnType)
 
-    case _ => Left(TypeError(s"Type inference not implemented for AST node: $ast", getSourceLocation(ast, file)))
+    case Hir.TypePointer(inner) => checkType(inner, env, TypingContext.EmptyContext, engine, scope)
+        .map(Hir.TypePointer.apply)
 
-  private def inferFunctionCall(
-      func: Ast,
-      args: List[Ast],
-      env: TypeEnv,
-      context: TypingContext,
-      engine: QueryEngine,
-      scope: ScopeId,
-      file: VfsNode
-  ): Either[FlurryError, (Hir, Hir)] =
-    for
-      (funcType, funcHir) <- inferType(func, env, TypingContext.EmptyContext, engine, scope, file)
-      result <- funcType match
-        case Hir.TypeFunction(_, _, _, paramTypes, returnType) =>
-          if args.length != paramTypes.length then
-            Left(TypeError(s"Function expects ${paramTypes.length} arguments, got ${args.length}"))
-          else
-            // Use argument teleportation for contextual typing
-            val argContexts = paramTypes.map(TypingContext.TypeExpectation.apply)
-            for
-              argResults <- args.zip(argContexts).traverse((arg, ctx) => inferType(arg, env, ctx, engine, scope, file))
-              (argTypes, argHirs) = argResults.unzip
-              _ <- argTypes.zip(paramTypes).traverse((actual, expected) => checkUnify(actual, expected))
-            yield (returnType, Hir.Block(funcHir :: argHirs))
-        case _ => Left(TypeError(s"Cannot call non-function type: $funcType"))
-    yield result
+    case Hir.TypeOption(inner) => checkType(inner, env, TypingContext.EmptyContext, engine, scope)
+        .map(Hir.TypeOption.apply)
 
-  private def inferLambda(
-      params: List[Ast],
-      returnTypeAst: Ast,
-      body: Ast,
-      env: TypeEnv,
-      context: TypingContext,
-      engine: QueryEngine,
-      scope: ScopeId,
-      file: VfsNode
-  ): Either[FlurryError, (Hir, Hir)] =
-    // Extract parameter names and types
-    val paramResults = params.map {
-      case Ast.Id(name) =>
-        val (paramVar, _) = InferenceState().freshTypeVar()
-        Right((name, paramVar))
-      case Ast.TypeWith(Ast.Id(name), typeAst) => astToType(typeAst, engine, scope).map((name, _))
-      case _ => Left(TypeError("Invalid lambda parameter"))
-    }
+    case Hir.TypeArray(elemType, size) =>
+      for
+        checkedElemType <- checkType(elemType, env, TypingContext.EmptyContext, engine, scope)
+        checkedSize <- checkType(size, env, TypingContext.TypeExpectation(Hir.TypeInteger), engine, scope)
+      yield Hir.TypeArray(checkedElemType, checkedSize)
 
-    for
-      paramInfo <- paramResults.traverse(identity)
-      (paramNames, paramTypes) = paramInfo.unzip
-      returnType <- astToType(returnTypeAst, engine, scope)
-      paramEnv = paramInfo.foldLeft(env)((acc, pair) => acc.extend(pair._1, pair._2))
-      (bodyType, bodyHir) <- inferType(body, paramEnv, TypingContext.TypeExpectation(returnType), engine, scope, file)
-      _ <- checkUnify(bodyType, returnType)
-      // 创建Hir参数列表
-      hirParams = paramInfo.map { case (name, paramType) => Hir.Param(name, paramType, Hir.Invalid) }
-    yield (Hir.TypeFunction(true, false, false, paramTypes, returnType), Hir.Block(List(bodyHir)))
+    case Hir.TypeApplication(caller, args) =>
+      for
+        checkedCaller <- checkType(caller, env, TypingContext.EmptyContext, engine, scope)
+        checkedArgs <- args.traverse(arg => checkType(arg, env, TypingContext.EmptyContext, engine, scope))
+      yield Hir.TypeApplication(checkedCaller, checkedArgs)
 
-  private def inferBinaryOp(
-      left: Ast,
-      right: Ast,
-      expectedType: Hir,
-      env: TypeEnv,
-      context: TypingContext,
-      op: BinaryOp,
-      engine: QueryEngine,
-      scope: ScopeId,
-      file: VfsNode
-  ): Either[FlurryError, (Hir, Hir)] =
-    for
-      (leftType, leftHir) <- inferType(left, env, TypingContext.TypeExpectation(expectedType), engine, scope, file)
-      (rightType, rightHir) <- inferType(right, env, TypingContext.TypeExpectation(expectedType), engine, scope, file)
-      _ <- checkUnify(leftType, expectedType)
-      _ <- checkUnify(rightType, expectedType)
-    yield (expectedType, Hir.BinaryApplication(op, leftHir, rightHir))
+    case Hir.TypeScheme(params, body) =>
+      // Add type parameters to environment
+      val paramEnv = params.foldLeft(env) { (acc, param) =>
+        param match
+          case Hir.TypeVar(name) => acc.extend(name, param)
+          case _ => acc
+      }
+      for checkedBody <- checkType(body, paramEnv, TypingContext.EmptyContext, engine, scope)
+      yield Hir.TypeScheme(params, checkedBody)
 
-  private def inferComparisonOp(
-      left: Ast,
-      right: Ast,
-      env: TypeEnv,
-      context: TypingContext,
-      op: BinaryOp,
-      engine: QueryEngine,
-      scope: ScopeId,
-      file: VfsNode
-  ): Either[FlurryError, (Hir, Hir)] =
-    for
-      (leftType, leftHir) <- inferType(left, env, TypingContext.EmptyContext, engine, scope, file)
-      (rightType, rightHir) <- inferType(right, env, TypingContext.TypeExpectation(leftType), engine, scope, file)
-      _ <- checkUnify(leftType, rightType)
-    yield (Hir.TypeBool, Hir.BinaryApplication(op, leftHir, rightHir))
+    // Default case - pass through if already well-typed
+    case other => Right(other)
 
-  private def inferUnaryOp(
-      expr: Ast,
-      expectedType: Hir,
-      env: TypeEnv,
-      context: TypingContext,
-      op: UnaryOp,
-      engine: QueryEngine,
-      scope: ScopeId,
-      file: VfsNode
-  ): Either[FlurryError, (Hir, Hir)] =
-    for
-      (exprType, exprHir) <- inferType(expr, env, TypingContext.TypeExpectation(expectedType), engine, scope, file)
-      _ <- checkUnify(exprType, expectedType)
-    yield (expectedType, Hir.UnaryApplication(op, exprHir))
+  // Infer the type of a HIR expression
+  def inferType(hir: Hir, env: TypeEnv, engine: QueryEngine, scope: ScopeId): Either[FlurryError, Hir] = hir match
+    case Hir.Integer(_) => Right(Hir.TypeInteger)
+    case Hir.Real(_) => Right(Hir.TypeReal)
+    case Hir.Str(_) => Right(Hir.TypeStr)
+    case Hir.Bool(_) => Right(Hir.TypeBool)
+    case Hir.CharVal(_) => Right(Hir.TypeChar)
+    case Hir.Symbol(_) => Right(Hir.TypeSymbol)
+    case Hir.NullVal => Right(Hir.TypeVoid) // or a special null type
+    case Hir.UndefinedVal => Right(Hir.TypeVoid)
 
-  private def checkUnify(actual: Hir, expected: Hir): Either[FlurryError, Unit] = unify(actual, expected).map(_ => ())
+    case Hir.TypeVar(name) => env.lookup(name) match
+        case Some(ty) => Right(ty)
+        case None => Right(Hir.TypeType) // Type variables have type Type
 
-  private def extractPatternName(pattern: Ast): Either[FlurryError, String] = pattern match
-    case Ast.Id(name) => Right(name)
-    case _ => Left(TypeError("Complex patterns not yet supported"))
+    case ty @ (Hir.TypeInteger | Hir.TypeReal | Hir.TypeStr | Hir.TypeBool | Hir.TypeChar | Hir.TypeSymbol | Hir
+          .TypeVoid | Hir.TypeNoReturn | Hir.TypeAny | Hir.TypeObject | Hir.TypeType) => Right(Hir.TypeType)
 
-  private def getSourceLocation(ast: Ast, file: VfsNode): Option[SourceLocation] =
-    // Convert AST span to SourceLocation
-    Some(SourceLocation(file.name, ast.span.start, ast.span.start)) // Simplified
+    case Hir.TypeFunction(_, _, _, params, returnType) => Right(Hir.TypeType)
+    case Hir.TypePointer(_) => Right(Hir.TypeType)
+    case Hir.TypeOption(_) => Right(Hir.TypeType)
+    case Hir.TypeArray(_, _) => Right(Hir.TypeType)
+    case Hir.TypeApplication(_, _) => Right(Hir.TypeType)
+    case Hir.TypeScheme(_, _) => Right(Hir.TypeType)
+
+    case Hir.FunctionDef(_, _, returnType, _, _, _) => Right(returnType)
+
+    case Hir.Application(callee, args) => inferType(callee, env, engine, scope).flatMap {
+        case Hir.TypeFunction(_, _, _, _, returnType) => Right(returnType)
+        case other => Left(TypeError(s"Cannot call non-function type: $other"))
+      }
+
+    case Hir.BinaryApplication(op, left, right) => op match
+        case BinaryOp.Eq | BinaryOp.Neq | BinaryOp.Lt | BinaryOp.Le | BinaryOp.Gt | BinaryOp.Ge => Right(Hir.TypeBool)
+        case BinaryOp.And | BinaryOp.Or => Right(Hir.TypeBool)
+        case BinaryOp.Add | BinaryOp.Sub | BinaryOp.Mul | BinaryOp.Div | BinaryOp.Mod =>
+          // For now, assume integer arithmetic
+          Right(Hir.TypeInteger)
+        case BinaryOp.Implies => Right(Hir.TypeBool)
+        case BinaryOp.TypeWith | BinaryOp.TraitBound => Right(Hir.TypeType)
+        case BinaryOp.AddAdd => Right(Hir.TypeInteger) // Or string depending on operands
+
+    case Hir.UnaryApplication(op, operand) => op match
+        case UnaryOp.Not => Right(Hir.TypeBool)
+        case UnaryOp.Neg => inferType(operand, env, engine, scope)
+        case UnaryOp.Deref =>
+          // Infer the type that the pointer points to
+          inferType(operand, env, engine, scope).flatMap {
+            case Hir.TypePointer(pointeeType) => Right(pointeeType)
+            case other => Left(TypeError(s"Cannot dereference non-pointer type: $other"))
+          }
+        case UnaryOp.Refer =>
+          // Create a pointer type
+          inferType(operand, env, engine, scope).map(Hir.TypePointer(_))
+
+    case Hir.Tuple(elements, _) =>
+      for elementTypes <- elements.traverse(elem => inferType(elem, env, engine, scope)) yield Hir.Tuple(elementTypes)
+
+    case Hir.Block(statements) => statements.lastOption match
+        case Some(lastStmt) => inferType(lastStmt, env, engine, scope)
+        case None => Right(Hir.TypeVoid)
+
+    case Hir.If(_, thenBranch, _) => inferType(thenBranch, env, engine, scope)
+
+    case Hir.Assign(_, value) => inferType(value, env, engine, scope)
+
+    case other => Left(TypeError(s"Cannot infer type for HIR node: ${other.getClass.getSimpleName}"))
+
+  // Helper methods
+  private def inferBinaryOpType(op: BinaryOp): Hir = op match
+    case BinaryOp.Add | BinaryOp.Sub | BinaryOp.Mul | BinaryOp.Div | BinaryOp.Mod => Hir.TypeInteger
+    case BinaryOp.And | BinaryOp.Or => Hir.TypeBool
+    case BinaryOp.Eq | BinaryOp.Neq | BinaryOp.Lt | BinaryOp.Le | BinaryOp.Gt | BinaryOp.Ge => Hir.TypeBool
+    case BinaryOp.Implies => Hir.TypeBool
+    case BinaryOp.TypeWith => Hir.TypeType
+    case BinaryOp.TraitBound => Hir.TypeType
+    case BinaryOp.AddAdd => Hir.TypeInteger // string concatenation or addition
+
+  private def inferUnaryOpType(op: UnaryOp): Hir = op match
+    case UnaryOp.Not => Hir.TypeBool
+    case UnaryOp.Neg => Hir.TypeInteger
+    case UnaryOp.Deref => Hir.TypeAny // type depends on what's being dereferenced
+    case UnaryOp.Refer => Hir.TypePointer(Hir.TypeAny) // creates a pointer
 
 // Extension method for traverse
 extension [A, B](list: List[A])
   def traverse[E](f: A => Either[E, B]): Either[E, List[B]] = list
     .foldRight(Right(Nil): Either[E, List[B]])((a, acc) => acc.flatMap(bs => f(a).map(_ :: bs)))
 
-// 公共接口，让其他模块可以使用类型推断系统 - 保持已重构的接口
+// 公共接口，让其他模块可以使用类型推断系统 - 现在在HIR上工作
 object ContextualTyping:
-  def inferType(ast: AstLocation, engine: QueryEngine, scope: ScopeId): Either[FlurryError, (Hir, Hir)] =
-    ContextualTyper.inferType(ast.node, TypeEnv(), TypingContext.EmptyContext, engine, scope, ast.file)
+  // 在HIR上进行类型检查的主要接口
+  def checkTypeOnHir(hir: Hir, engine: QueryEngine, scope: ScopeId): Either[FlurryError, Hir] = ContextualTyper
+    .checkType(hir, TypeEnv(), TypingContext.EmptyContext, engine, scope)
 
-  def inferTypeWithEnv(
-      ast: AstLocation,
-      env: TypeEnv,
-      engine: QueryEngine,
-      scope: ScopeId
-  ): Either[FlurryError, (Hir, Hir)] = ContextualTyper
-    .inferType(ast.node, env, TypingContext.EmptyContext, engine, scope, ast.file)
+  def checkTypeOnHirWithEnv(hir: Hir, env: TypeEnv, engine: QueryEngine, scope: ScopeId): Either[FlurryError, Hir] =
+    ContextualTyper.checkType(hir, env, TypingContext.EmptyContext, engine, scope)
 
-  def checkType(
-      ast: AstLocation,
+  def checkTypeOnHirWithExpectation(
+      hir: Hir,
       expectedType: Hir,
       engine: QueryEngine,
       scope: ScopeId
-  ): Either[FlurryError, (Hir, Hir)] = ContextualTyper
-    .inferType(ast.node, TypeEnv(), TypingContext.TypeExpectation(expectedType), engine, scope, ast.file).map(_._2)
-    .map((expectedType, _))
+  ): Either[FlurryError, Hir] = ContextualTyper
+    .checkType(hir, TypeEnv(), TypingContext.TypeExpectation(expectedType), engine, scope)
 
-  def checkTypeWithEnv(
-      ast: AstLocation,
-      expectedType: Hir,
-      env: TypeEnv,
-      engine: QueryEngine,
-      scope: ScopeId
-  ): Either[FlurryError, (Hir, Hir)] = ContextualTyper
-    .inferType(ast.node, env, TypingContext.TypeExpectation(expectedType), engine, scope, ast.file).map(_._2)
-    .map((expectedType, _))
+  def inferTypeOnHir(hir: Hir, engine: QueryEngine, scope: ScopeId): Either[FlurryError, Hir] = ContextualTyper
+    .inferType(hir, TypeEnv(), engine, scope)

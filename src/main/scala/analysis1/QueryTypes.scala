@@ -19,7 +19,6 @@ enum QueryStatus:
   case Completed
   case Failed(error: FlurryError)
 
-// 编译错误类型 - 现在继承FlurryError
 case class NameResolutionError(message: String, location: Option[AstLocation] = None, override val code: Int = 3001)
     extends FlurryError:
   override def errorMessage: String = message
@@ -62,7 +61,7 @@ object QueryTypes:
 
   // Type Resolution Queries
   case class TypingQuery(expr: AstLocation, scope: ScopeId, expected: Option[Hir] = None) extends QueryKey
-  // 第一个Hir是类型，第二个Hir是类型化后的表达式
+  // 第一个Hir是类型，第二个Hir是类型化后的Hir
   case class TypeResult(hir: (Hir, Hir)) extends QueryResult
 
   case class ResolveTypeQuery(typeAst: AstLocation, scope: ScopeId) extends QueryKey
@@ -92,9 +91,12 @@ object QueryTypes:
   // case class ComptimeTypeQuery(hir: Hir, context: ComptimeContext) extends QueryKey
   case class ComptimeResult(value: Hir) extends QueryResult
 
-  // VFS Analysis Queries - 新增VFS分析查询
+  // Initialization Queries
+  case class InitilizeBuiltinsQuery(mainPackageName: String = "main") extends QueryKey
+  case class BuiltinsResult() extends QueryResult
+
   case class BuildModuleStructureQuery(vfsInstance: vfs.Vfs) extends QueryKey
-  case class ModuleStructureResult(rootScope: ScopeId, projectHir: Hir.ProjectDef) extends QueryResult
+  case class ModuleStructureResult(projectHir: Hir.ProjectDef) extends QueryResult
 
   case class ProcessVfsNodeQuery(node: vfs.VfsNode, parentScope: ScopeId) extends QueryKey
   case class VfsNodeResult(scope: ScopeId, moduleHir: Hir) extends QueryResult

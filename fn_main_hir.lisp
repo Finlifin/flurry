@@ -1,7 +1,8 @@
 
 (function damn 
     (params 
-        (param sd undefined invalid)) undefined 
+        (param sd i32 invalid)) i32 
     (block 
         (const 
-            (pattern-as invalid x) undefined 42)))
+            (pattern-as invalid x) i32 42) 
+        (var-ref sd i32)))

@@ -9,22 +9,16 @@ import QueryTypes.*
 class VfsAnalyzer(engine: QueryEngine):
   val scopeManager: ScopeManager = engine.scopeManager
 
-  def buildModuleStructure(vfsInstance: vfs.Vfs): Either[FlurryError, ModuleStructureResult] =
-    // 创建项目根作用域
-    val projectScope = scopeManager.createScope("project", None)
-
+  def buildModuleStructure(): Either[FlurryError, ModuleStructureResult] =
     // 查找src目录
-    val srcDirectory = vfsInstance.root.children.flatMap(_.find(_.kind == vfs.VfsNodeKind.SrcDirectory)) match
+    val srcDirectory = engine.vfsInstance.root.children.flatMap(_.find(_.kind == vfs.VfsNodeKind.SrcDirectory)) match
       case Some(src) => src
       case None => return Left(NameResolutionError("No src directory found"))
 
-    // 处理src目录，创建main包
-    val mainScope = scopeManager.createScope("main", Some(projectScope))
-
     for
-      srcResult <- engine.execute[VfsNodeResult](ProcessVfsNodeQuery(srcDirectory, mainScope))
-      projectHir = Hir.ProjectDef(vfsInstance.projectPath, projectScope).asInstanceOf[Hir.ProjectDef]
-    yield ModuleStructureResult(projectScope, projectHir)
+      srcResult <- engine.execute[VfsNodeResult](ProcessVfsNodeQuery(srcDirectory, engine.mainPackageScope))
+      projectHir = Hir.ProjectDef(engine.vfsInstance.projectPath, engine.projectScope).asInstanceOf[Hir.ProjectDef]
+    yield ModuleStructureResult(projectHir)
 
   def processVfsNode(node: VfsNode, parentScope: ScopeId): Either[FlurryError, VfsNodeResult] = node.kind match
     case vfs.VfsNodeKind.File => processFileNode(node, parentScope)

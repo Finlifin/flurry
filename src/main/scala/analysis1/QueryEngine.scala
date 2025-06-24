@@ -7,6 +7,7 @@ import QueryTypes.*
 import scala.concurrent.Future
 import scala.util.chaining.*
 import vfs.Vfs
+import scala.annotation.init
 
 // 查询执行结果
 enum QueryExecutionResult[+T <: QueryResult]:
@@ -19,6 +20,8 @@ enum QueryExecutionResult[+T <: QueryResult]:
 class QueryEngine(var vfsInstance: Vfs):
   private val cache = QueryCache()
   var scopeManager: ScopeManager = ScopeManager()
+  val projectScope: ScopeId = scopeManager.createScope("project")
+  var mainPackageScope: ScopeId = null
   // 创建VFS分析器实例 - 延迟初始化以避免循环依赖
   private lazy val vfsAnalyzer = VfsAnalyzer(this)
 
@@ -51,6 +54,9 @@ class QueryEngine(var vfsInstance: Vfs):
         query match
           case q: AnalysisQuery => analyzeQuery(q)
 
+          // AST to HIR Translation
+          // case q: AstToHirQuery => astToHirQuery(q)
+
           // Name Resolution - 使用现代模式匹配
           case q: ResolveNameQuery => resolveNameQuery(q)
           case q: ResolvePathQuery => resolvePathQuery(q)
@@ -76,7 +82,7 @@ class QueryEngine(var vfsInstance: Vfs):
           // case q: EvaluateComptimeQuery => evaluateComptimeQuery(q)
           // case q: ComptimeTypeQuery => comptimeTypeQuery(q)
 
-          // VFS Analysis - 新增VFS分析查询处理
+          case q: InitilizeBuiltinsQuery => initBuiltinScopes(q)
           case q: BuildModuleStructureQuery => buildModuleStructureQuery(q)
           case q: ProcessVfsNodeQuery => processVfsNodeQuery(q)
           case q: AnalyzeFileQuery => analyzeFileQuery(q)
@@ -99,6 +105,46 @@ class QueryEngine(var vfsInstance: Vfs):
       case Left(_) => // Error already handled above
     }
 
+  // 初始化math, builtin, meta, build, std, attr, main
+  def initBuiltinScopes(query: InitilizeBuiltinsQuery): Either[FlurryError, BuiltinsResult] =
+    // 初始化内置作用域
+    val builtin = scopeManager.createScope("builtin", Some(projectScope))
+    mainPackageScope = scopeManager.createScope(query.mainPackageName, Some(projectScope))
+    scopeManager.createScope("math", Some(projectScope))
+    scopeManager.createScope("meta", Some(projectScope))
+    scopeManager.createScope("build", Some(projectScope))
+    scopeManager.createScope("std", Some(projectScope))
+    scopeManager.createScope("attr", Some(projectScope))
+
+    scopeManager.setHir(scopeManager.createScope("Integer", Some(builtin)), Hir.TypeInteger)
+    scopeManager.setHir(scopeManager.createScope("Real", Some(builtin)), Hir.TypeReal)
+    scopeManager.setHir(scopeManager.createScope("i8", Some(builtin)), Hir.TypeInt(8, true))
+    scopeManager.setHir(scopeManager.createScope("i16", Some(builtin)), Hir.TypeInt(16, true))
+    scopeManager.setHir(scopeManager.createScope("i32", Some(builtin)), Hir.TypeInt(32, true))
+    scopeManager.setHir(scopeManager.createScope("i64", Some(builtin)), Hir.TypeInt(64, true))
+    scopeManager.setHir(scopeManager.createScope("isize", Some(builtin)), Hir.TypeInt(64, true))
+    scopeManager.setHir(scopeManager.createScope("i128", Some(builtin)), Hir.TypeInt(128, true))
+    scopeManager.setHir(scopeManager.createScope("u8", Some(builtin)), Hir.TypeInt(8, false))
+    scopeManager.setHir(scopeManager.createScope("u16", Some(builtin)), Hir.TypeInt(16, false))
+    scopeManager.setHir(scopeManager.createScope("u32", Some(builtin)), Hir.TypeInt(32, false))
+    scopeManager.setHir(scopeManager.createScope("u64", Some(builtin)), Hir.TypeInt(64, false))
+    scopeManager.setHir(scopeManager.createScope("usize", Some(builtin)), Hir.TypeInt(64, false))
+    scopeManager.setHir(scopeManager.createScope("u128", Some(builtin)), Hir.TypeInt(128, false))
+    scopeManager.setHir(scopeManager.createScope("f32", Some(builtin)), Hir.TypeFloat(32))
+    scopeManager.setHir(scopeManager.createScope("f64", Some(builtin)), Hir.TypeFloat(64))
+    scopeManager.setHir(scopeManager.createScope("f128", Some(builtin)), Hir.TypeFloat(128))
+    scopeManager.setHir(scopeManager.createScope("bool", Some(builtin)), Hir.TypeBool)
+    scopeManager.setHir(scopeManager.createScope("str", Some(builtin)), Hir.TypeStr)
+    scopeManager.setHir(scopeManager.createScope("char", Some(builtin)), Hir.TypeChar)
+
+    scopeManager.getScope(mainPackageScope) match
+      case Some(mainScope) =>
+        // 添加use builtin.*
+        mainScope.uses.addOne(UseImport.UseAll(builtin))
+      case None => throw new RuntimeException(s"Main scope $mainPackageScope not found")
+
+    Right(BuiltinsResult())
+
   private def analyzeQuery(query: AnalysisQuery): Either[FlurryError, AnalysisResult] =
     Analyzer(query.ast, scopeId = query.scopeId, engine = this).analyze()
 
@@ -107,9 +153,12 @@ class QueryEngine(var vfsInstance: Vfs):
     query.name match
       case "null" => Right(NameResolutionResult(Symbol("null", Hir.NullVal), None))
       case "undefined" => Right(NameResolutionResult(Symbol("undefined", Hir.UndefinedVal), None))
-      case _ => scopeManager.resolve(query.name, query.scope) match
+      case _ =>
+        println(s"Resolving name: ${query.name} in scope: ${query.scope}")
+        scopeManager.resolve(query.name, query.scope) match
           case Some((symbol, foundScope)) if symbol.hir == Hir.AwaitingAnalysis =>
             // 如果是未解析的符号，自动执行该符号的解析逻辑
+            println(s"Found awaiting analysis symbol: ${symbol.name}, starting analysis...")
             execute[AnalysisResult](AnalysisQuery(symbol.hir.ast.get, query.scope)) match
               case Right(AnalysisResult(hir)) =>
                 // 保留原有的AST信息
@@ -121,9 +170,15 @@ class QueryEngine(var vfsInstance: Vfs):
                 )
                 scopeManager.updateSymbol(query.scope, symbol.copy(hir = updatedHir))
                 Right(NameResolutionResult(symbol.copy(hir = updatedHir), foundScope))
-              case Left(error) => Left(error)
-          case Some((symbol, foundScope)) => Right(NameResolutionResult(symbol, foundScope))
-          case None => Left(NameResolutionError(s"Undefined name: ${query.name}", query.location))
+              case Left(error) =>
+                println(s"Analysis failed for symbol ${symbol.name}: $error")
+                Left(error)
+          case Some((symbol, foundScope)) =>
+            println(s"Found symbol: ${symbol.name} = ${dumpHir(symbol.hir)} in scope: $foundScope")
+            Right(NameResolutionResult(symbol, foundScope))
+          case None =>
+            println(s"Failed to resolve name: ${query.name} in scope: ${query.scope}")
+            Left(NameResolutionError(s"Undefined name: ${query.name}", query.location))
 
   // 路径解析查询
   // 从第一个id开始，逐级执行name resolve query
@@ -170,12 +225,19 @@ class QueryEngine(var vfsInstance: Vfs):
       case _ => Left(NameResolutionError("Invalid module AST for scope tree building"))
 
   private def typingQuery(query: TypingQuery): Either[FlurryError, TypeResult] =
-    val result = query.expected match
-      case Some(expectedType) => ContextualTyping.checkType(query.expr, expectedType, this, query.scope)
-      case None => ContextualTyping.inferType(query.expr, this, query.scope)
+    // 首先需要将AST翻译为HIR
+    val analyzer = Analyzer(query.expr, query.scope, this)
 
-    result match
-      case Right(hirType) => Right(TypeResult(hirType))
+    analyzer.translate() match
+      case Right(hir) =>
+        val result = query.expected match
+          case Some(expectedType) => ContextualTyping
+              .checkTypeOnHirWithExpectation(hir, expectedType, this, query.scope)
+          case None => ContextualTyping.inferTypeOnHir(hir, this, query.scope)
+
+        result match
+          case Right(checkedHir) => Right(TypeResult((checkedHir, checkedHir))) // 类型和检查后的HIR
+          case Left(error) => Left(error)
       case Left(error) => Left(error)
 
   private def resolveTypeQuery(query: ResolveTypeQuery): Either[FlurryError, TypeResult] =
@@ -207,19 +269,6 @@ class QueryEngine(var vfsInstance: Vfs):
     // TODO: 实现trait实现查找 - 使用独立的trait解析组件
     Right(TraitImplementationResult(None))
 
-  // HIR Construction Implementation - 使用 AstToHirTranslator.scala 中的实现
-  // private def astToHirQuery(query: AstToHirQuery): Either[FlurryError, HirResult] =
-  //   given QueryEngine = this
-  //   val translator = AstToHirTranslator()
-  //   val context = TranslationContext(
-  //     engine = this,
-  //     scopeManager = scopeManager,
-  //     currentScope = query.context.scope,
-  //     currentFile = query.file,
-  //     globalContext = GlobalCompilationContext(DiagnosticsReporter())
-  //   )
-  //   translator.translate(query.ast, context).map(HirResult.apply)
-
   private def processDefinitionQuery(query: ProcessDefinitionQuery): Either[FlurryError, HirResult] =
     given QueryEngine = this
     Left(NameResolutionError("Definition processing not implemented yet"))
@@ -236,7 +285,7 @@ class QueryEngine(var vfsInstance: Vfs):
 
   // VFS Analysis Implementation - 使用VfsAnalyzer组件
   private def buildModuleStructureQuery(query: BuildModuleStructureQuery): Either[FlurryError, ModuleStructureResult] =
-    vfsAnalyzer.buildModuleStructure(query.vfsInstance)
+    vfsAnalyzer.buildModuleStructure()
 
   private def processVfsNodeQuery(query: ProcessVfsNodeQuery): Either[FlurryError, VfsNodeResult] = vfsAnalyzer
     .processVfsNode(query.node, query.parentScope)

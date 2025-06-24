@@ -38,35 +38,30 @@ def main(): Unit =
     import analysis1.QueryTypes.*
     val moduleStructureQuery = BuildModuleStructureQuery(vfs)
 
-    queryEngine.execute[ModuleStructureResult](moduleStructureQuery) match
-      case Right(result) =>
+    for
+      initBuiltinsResult <- queryEngine.execute[BuiltinsResult](InitilizeBuiltinsQuery())
+      result <- queryEngine.execute[ModuleStructureResult](moduleStructureQuery)
+      _ = {
         println("Module structure built successfully")
-
         // 输出结果到HIR文件
         hir_buffer.println(queryEngine.dumpHir(result.projectHir))
         hir_buffer.flush()
         hir_buffer.close()
         println("HIR dumped to hir.lisp")
-
-        queryEngine.execute[NameResolutionResult](ResolvePathQuery(List("main", "damn"), result.rootScope)) match
-          case Right(nameResolutionResult) =>
-            val scopeInfo = nameResolutionResult.scope.map(_.toString).getOrElse("current scope")
-            println(s"Resolved 'main.damn' to symbol: ${nameResolutionResult.symbol.name} in scope: $scopeInfo")
-            // 输出fn_main的HIR到单独文件
-            val fnMainHir = queryEngine.dumpHir(nameResolutionResult.symbol.hir)
-            fn_main_hir_buffer.println(fnMainHir)
-            fn_main_hir_buffer.flush()
-            fn_main_hir_buffer.close()
-            println("Function main HIR dumped to fn_main_hir.lisp")
-          case Left(error) =>
-            println(s"Error resolving 'main.damn': ${error.errorMessage}")
-            error.printStackTrace()
-
-      case Left(error) =>
-        println(s"Error building module structure: ${error.errorMessage}")
-        error.printStackTrace()
-
-    // queryEngine.execute[NameResolutionResult]()
+      }
+      nameResolutionResult <- queryEngine
+        .execute[NameResolutionResult](ResolvePathQuery(List("main", "damn"), queryEngine.projectScope))
+      _ = {
+        val scopeInfo = nameResolutionResult.scope.map(_.toString).getOrElse("current scope")
+        println(s"Resolved 'main.damn' to symbol: ${nameResolutionResult.symbol.name} in scope: $scopeInfo")
+        // 输出fn_main的HIR到单独文件
+        val fnMainHir = queryEngine.dumpHir(nameResolutionResult.symbol.hir)
+        fn_main_hir_buffer.println(fnMainHir)
+        fn_main_hir_buffer.flush()
+        fn_main_hir_buffer.close()
+        println("Function main HIR dumped to fn_main_hir.lisp")
+      }
+    yield ()
   catch
     case e: Exception =>
       println(s"Error during analysis: ${e.getMessage}")

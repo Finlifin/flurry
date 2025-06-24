@@ -1,3 +1,4 @@
-fn damn(sd: undefined) -> undefined {
-    const x: undefined = 42;
+fn damn(sd: i32) -> i32 {
+    const x: i32 = 42;
+    sd
 }

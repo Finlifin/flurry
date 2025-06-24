@@ -1,1 +1,1 @@
-(file-scope (fn damn ((param-typed sd undefined)) undefined (block (const x undefined 42))))
+(file-scope (fn damn ((param-typed sd i32)) i32 (block (const x i32 42) sd)))

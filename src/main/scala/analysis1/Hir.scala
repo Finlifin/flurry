@@ -124,7 +124,7 @@ enum Hir extends ASTTrackable:
   case TypeChar
   case TypeSymbol
   case TypeFloat(size: Int)
-  case TypeInt(size: Int)
+  case TypeInt(size: Int, signed: Boolean = true)
   case TypePointer(to: Hir)
   case TypeOption(to: Hir)
   case TypePattern(to: Hir)
@@ -157,6 +157,7 @@ enum Hir extends ASTTrackable:
   case NullVal
   case UndefinedVal
 
+  case ListVal(elements: List[Hir], ty: Hir = Hir.TypeAny) extends Hir, Attribute
   // expressions
   case BinaryApplication(op: BinaryOp, lhs: Hir, rhs: Hir)
   case UnaryApplication(op: UnaryOp, operand: Hir)
@@ -217,6 +218,11 @@ enum Hir extends ASTTrackable:
   case Invalid
   // 这通常需要根据指向的ast节点接着解析
   case AwaitingAnalysis
+  case Unresolved(name: String)
+  // 已解析的变量引用
+  case VarRef(name: String, varType: Hir) extends Hir, Attribute
+  // 变量定义（用于符号表）
+  case Var(name: String, varType: Hir) extends Hir, Attribute
 
   // S-expression格式序列化
   override def toString: String = this match
@@ -334,7 +340,7 @@ enum Hir extends ASTTrackable:
     case TypeChar => "char"
     case TypeSymbol => "symbol"
     case TypeFloat(size) => s"f$size"
-    case TypeInt(size) => s"i$size"
+    case TypeInt(size, signed) => if signed then s"i$size" else s"u$size"
     case TypePointer(to) => s"(ptr $to)"
     case TypeOption(to) => s"(option $to)"
     case TypePattern(to) => s"(pattern $to)"
@@ -372,6 +378,9 @@ enum Hir extends ASTTrackable:
       val childrenStr = if children.nonEmpty then s" ${children.map(_.toString).mkString(" ")}" else ""
       val propsStr = if properties.nonEmpty then s" ${properties.map((k, v) => s"($k $v)").mkString(" ")}" else ""
       s"(object$childrenStr$propsStr)"
+    case ListVal(elements, ty) =>
+      val elementsStr = if elements.nonEmpty then s" (${elements.map(_.toString).mkString(" ")})" else ""
+      s"(list$elementsStr $ty)"
     case NullVal => "null"
     case UndefinedVal => "undefined"
 
@@ -387,6 +396,7 @@ enum Hir extends ASTTrackable:
     case Index(target, index) => s"(index $target $index)"
 
     case FieldAccess(target, field) => s"(field-access $target $field)"
+    case AutoDerefAccess(target, field) => s"(auto-deref-access $target $field)"
 
     case ObjectApplication(target, method, args, obj) =>
       val argsStr = if args.nonEmpty then s" ${args.map(_.toString).mkString(" ")}" else ""
@@ -467,6 +477,9 @@ enum Hir extends ASTTrackable:
     // 特殊值
     case Invalid => "invalid"
     case AwaitingAnalysis => "awaiting-analysis"
+    case Unresolved(name) => s"(unresolved $name)"
+    case VarRef(name, varType) => s"(var-ref $name $varType)"
+    case Var(name, varType) => s"(var $name $varType)"
 
 object Hir:
   private var currentId: Int = 0

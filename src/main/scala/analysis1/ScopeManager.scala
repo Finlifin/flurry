@@ -16,6 +16,9 @@ class ScopeManager:
     id
 
   def getScope(id: ScopeId): Option[Scope] = scopes.get(id)
+  def setHir(scopeId: ScopeId, hir: Hir): Unit = scopes.get(scopeId) match
+    case Some(scope) => scope.hir = Some(hir)
+    case None => throw ju.NoSuchElementException(s"Scope $scopeId does not exist")
 
   def addChild(parentId: ScopeId, childId: ScopeId): Unit = scopes.get(parentId) match
     case Some(parent) if parent.ordered => parent.children += childId
