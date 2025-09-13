@@ -4,6 +4,7 @@
 # 引论与愿景
 - [Flurry: 一个编程语言](introduction/vision.md)
 - [快速入门](introduction/quickstart.md)
+- [Comptime vision](introduction/comptime_vision.md)
 
 <!-- 第二部分： 核心语言特性 -->
 # 核心语言特性
