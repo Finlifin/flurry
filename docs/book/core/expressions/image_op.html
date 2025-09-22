@@ -1,0 +1,308 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>取像操作 (expr &#x27; image) - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="取像操作-expr--image"><a class="header" href="#取像操作-expr--image">取像操作 (expr ' image)</a></h2>
+<p>Flurry 引入了一种独特且强大的后缀操作符——<strong>取像操作 (<code>'</code>)</strong>，用于获取一个表达式在不同抽象层面或元数据维度的“像 (Image)”。这个操作符提供了一个统一的语法入口，访问与表达式相关的编译时信息、运行时表示或其他关联属性。</p>
+<h3 id="语法"><a class="header" href="#语法">语法</a></h3>
+<p>取像操作的基本语法形式为：</p>
+<pre><code class="language-flurry">expression ' image_identifier
+</code></pre>
+<ul>
+<li><strong><code>expression</code></strong>: 任何有效的 Flurry 表达式。</li>
+<li><strong><code>'</code> (单引号)</strong>: 取像操作符。</li>
+<li><strong><code>image_identifier</code></strong>: 一个标识符，指定想要获取的“像”的类型。这个标识符<strong>不是</strong>变量或关键字，而是由 Flurry 编译器内部识别的、用于特定取像操作的名称。</li>
+</ul>
+<p>根据您提供的优先级表 (<code>OpTable</code>)，取像操作符 <code>'</code> 具有很高的优先级 (100)，确保它紧密绑定其左侧的 <code>expression</code>。</p>
+<h3 id="概念与用途"><a class="header" href="#概念与用途">概念与用途</a></h3>
+<p>“取像”可以理解为获取表达式 <code>expression</code> 的某个特定方面或表示：</p>
+<ol>
+<li>
+<p><strong>元数据 (Metadata)</strong>: 获取与表达式相关的元信息。</p>
+<ul>
+<li><code>expression ' type</code>: 获取表达式在编译时确定的<strong>类型</strong>。结果本身是一个编译时 <code>Type</code> 类型的值。
+<pre><code class="language-flurry">let x = 10;
+comptime let type_of_x = x'type; -- type_of_x 的值是代表 i32 (或默认整数类型) 的 Type 对象
+</code></pre>
+</li>
+<li><code>enum_value ' tag_name</code>: 获取枚举值当前变体的<strong>名称</strong>（作为一个编译时常量字符串）。
+<pre><code class="language-flurry">enum Status { ok, loading, error }
+let current = Status.loading;
+comptime let name = current'tag_name; -- name 的值是 "loading"
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>抽象表示 (Abstract Representation)</strong>: 获取表达式底层数据的一种抽象视图。</p>
+<ul>
+<li><code>value ' bitvec</code>: 获取值 <code>value</code> 在内存中的<strong>位向量 (Bit Vector)</strong> 表示。结果是一个编译时可知长度（基于 <code>value</code> 的类型）的 <code>BitVec&lt;N&gt;</code> 抽象类型，可以用于编译时的位操作（编译器会优化为高效的机器指令）。
+<pre><code class="language-flurry">let flags: u8 = 0b1010_0101;
+comptime let bv = flags'bitvec;
+-- comptime let first_nybble = bv.slice(0..4); -- 假设 bitvec 支持切片
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>关联操作或转换 (Associated Operation / Transformation)</strong>: 触发某种与表达式相关的特殊操作。</p>
+<ul>
+<li><code>dst_pointer ' dst_deref</code>: (用于动态大小类型 DST) 这不是获取一个简单的值，而是触发一种特殊的<strong>解引用操作</strong>，允许对 DST 指针指向的内容进行模式匹配或访问，编译器会根据指针指向的实际数据（例如 <code>tagged_polymorphic</code> 枚举的 tag）来确定如何解释内存。</li>
+<li><code>tuple ' enumerate</code>: (用于元组) 可能返回一个包含 <code>(元素, 索引)</code> 对的迭代器或编译时可展开的序列，用于 <code>inline for</code>。</li>
+</ul>
+</li>
+</ol>
+<h3 id="编译时与运行时"><a class="header" href="#编译时与运行时">编译时与运行时</a></h3>
+<p>取像操作的结果可能是：</p>
+<ul>
+<li><strong>编译时常量</strong>: 如 <code>'type</code> 的结果是编译时 <code>Type</code>，<code>'tag_name</code> 的结果是编译时 <code>str</code>。这些结果可以直接用于 <code>comptime</code> 代码块和编译时条件判断。</li>
+<li><strong>运行时值</strong>: 如 <code>'bitvec</code> 得到的是一个抽象表示，但最终的操作会生成运行时代码。<code>'dst_deref</code> 也是在运行时执行的特殊解引用。<code>'enumerate</code> 可能产生运行时迭代器。</li>
+<li><strong>操作触发器</strong>: 某些“像”可能不直接返回值，而是触发编译器执行特定的分析或代码生成过程。</li>
+</ul>
+<p>编译器负责根据 <code>image_identifier</code> 确定具体的语义和结果类型。</p>
+<h3 id="内置的-像"><a class="header" href="#内置的-像">内置的 "像"</a></h3>
+<p>Flurry 语言会预定义一系列有用的 <code>image_identifier</code>。一些我们已经讨论过的或可能的例子包括：</p>
+<ul>
+<li><code>'type</code>: 获取编译时类型。</li>
+<li><code>'tag_name</code>: 获取枚举变体名（字符串）。</li>
+<li><code>'bitvec</code>: 获取位向量抽象视图。</li>
+<li><code>'dst_deref</code>: 用于 DST 指针的特殊解引用/匹配。</li>
+<li><code>'enumerate</code>: 用于元组或其他序列的带索引迭代。</li>
+<li><em>（可能还有 <code>'size</code> 获取类型大小, <code>'alignment</code> 获取对齐, <code>'address</code> 获取地址等）</em></li>
+</ul>
+<p>这个列表是<strong>由语言定义和编译器内置的</strong>，开发者不能自定义新的 <code>'image_identifier</code>。</p>
+<h3 id="设计优势"><a class="header" href="#设计优势">设计优势</a></h3>
+<ul>
+<li><strong>统一语法</strong>: 为多种不同的元信息查询和底层操作提供了一致的后缀语法。</li>
+<li><strong>简洁</strong>: <code>expr'type</code> 比 <code>get_type(expr)</code> 或 <code>typeof(expr)</code> 更简洁。</li>
+<li><strong>与编译时系统集成</strong>: 许多“像”直接产生编译时值，无缝融入 <code>comptime</code> 计算。</li>
+<li><strong>表达力</strong>: 提供了访问语言底层信息和触发特殊操作的强大能力。</li>
+</ul>
+<h3 id="总结"><a class="header" href="#总结">总结</a></h3>
+<p>取像操作 (<code>expr ' image</code>) 是 Flurry 中一个富有创新性的特性。它通过一个简洁的后缀操作符 <code>'</code> 和编译器内置的 <code>image_identifier</code>，提供了一个统一的接口来访问表达式的类型、元数据、抽象表示或触发特殊操作。这是 Flurry 强大的编译时元编程和底层控制能力的又一体现。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/expressions/suffix_chaining.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/control_flow.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/expressions/suffix_chaining.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/control_flow.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>字面量详解 - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="字面量详解"><a class="header" href="#字面量详解">字面量详解</a></h2>
+<p>字面量 (Literals) 是源代码中直接表示固定值的文本表示。它们是构建程序逻辑和数据的基本元素。Flurry 提供了丰富且灵活的字面量语法，以精确地表示各种常见类型的值。</p>
+<h3 id="1-整数-integer"><a class="header" href="#1-整数-integer">1. 整数 (Integer)</a></h3>
+<p>整数用于表示没有小数部分的数值。</p>
+<ul>
+<li><strong>十进制 (Decimal)</strong>: 最常见的形式。
+<pre><code class="language-flurry">123
+0
+-42
+</code></pre>
+</li>
+<li><strong>不同进制</strong>:
+<ul>
+<li><strong>二进制 (Binary)</strong>: 以 <code>0b</code> 或 <code>0B</code> 开头。
+<pre><code class="language-flurry">0b101010 -- == 42
+0B1111_0000
+</code></pre>
+</li>
+<li><strong>八进制 (Octal)</strong>: 以 <code>0o</code> 或 <code>0O</code> 开头。
+<pre><code class="language-flurry">0o777 -- == 511
+0O123_456
+</code></pre>
+</li>
+<li><strong>十六进制 (Hexadecimal)</strong>: 以 <code>0x</code> 或 <code>0X</code> 开头。
+<pre><code class="language-flurry">0xFF -- == 255
+0xCafeBabe
+0Xdead_beef
+</code></pre>
+</li>
+</ul>
+</li>
+<li><strong>类型后缀 (Type Suffix)</strong>: 可以通过后缀指定具体的整数类型。常见的后缀包括 <code>u8</code>, <code>i32</code>, <code>u64</code>, <code>isize</code>, <code>usize</code> 等（具体可用后缀依赖于语言标准库定义）。如果省略后缀，编译器会根据上下文尝试推断类型，或使用默认类型（例如 <code>i32</code>）。
+<pre><code class="language-flurry">100i32
+42u8
+0xFF_u64
+</code></pre>
+</li>
+<li><strong>下划线分隔符 (<code>_</code>)</strong>: 为了提高可读性，可以在数字之间使用下划线 <code>_</code> 作为分隔符。下划线会被编译器忽略。注意，字面量的第一个字符不能是下划线（除非是负号后的第一个数字）。
+<pre><code class="language-flurry">1_000_000
+0b1111_0000_1010_0101
+</code></pre>
+</li>
+</ul>
+<h3 id="2-浮点数-float"><a class="header" href="#2-浮点数-float">2. 浮点数 (Float)</a></h3>
+<p>浮点数用于表示可能带有小数部分的数值。</p>
+<ul>
+<li><strong>基本形式</strong>: 必须包含小数点 <code>.</code> 或指数标记 <code>e</code>/<code>E</code>。
+<pre><code class="language-flurry">3.14159
+-0.5
+100.0 -- 即使小数部分为 0，也表示浮点数
+1. -- 合法，等同于 1.0 (如果语法允许)
+.5 -- 可能非法，通常需要小数点前有数字
+</code></pre>
+</li>
+<li><strong>科学计数法 (Scientific Notation)</strong>: 使用 <code>e</code> 或 <code>E</code> 表示 10 的幂。
+<pre><code class="language-flurry">1.23e4  -- == 12300.0
+-5.67E-3 -- == -0.00567
+</code></pre>
+</li>
+<li><strong>类型后缀 (Type Suffix)</strong>: 可以使用 <code>f32</code> 或 <code>f64</code> 后缀指定精度。如果省略，编译器通常会推断或默认使用 <code>f64</code>。
+<pre><code class="language-flurry">2.718f32
+-42.0f64
+1e6f64 -- 1 百万，64 位浮点数
+</code></pre>
+</li>
+<li><strong>下划线分隔符 (<code>_</code>)</strong>: 同样可用，规则与整数相同。
+<pre><code class="language-flurry">3_141_592.653_589f64
+1_000e-3_f32 -- == 1.0f32
+</code></pre>
+</li>
+</ul>
+<h3 id="3-字符-character"><a class="header" href="#3-字符-character">3. 字符 (Character)</a></h3>
+<p>字符表示单个 Unicode 标量值，用<strong>单引号 <code>' '</code></strong> 括起来。</p>
+<ul>
+<li><strong>普通字符</strong>:
+<pre><code class="language-flurry">'a'
+'Z'
+'7'
+'_'
+</code></pre>
+</li>
+<li><strong>转义序列 (Escape Sequences)</strong>: 使用反斜杠 <code>\</code> 进行转义，支持常见转义：
+<ul>
+<li><code>\'</code>: 单引号</li>
+<li><code>\\</code>: 反斜杠</li>
+<li><code>\n</code>: 换行符 (Newline)</li>
+<li><code>\r</code>: 回车符 (Carriage Return)</li>
+<li><code>\t</code>: 水平制表符 (Horizontal Tab)</li>
+<li><em>（可能还有其他，如 <code>\0</code> 空字符等）</em></li>
+</ul>
+<pre><code class="language-flurry">'\'' -- 表示单引号字符
+'\\' -- 表示反斜杠字符
+'\n'
+</code></pre>
+</li>
+<li><strong>Unicode 转义</strong>: 使用 <code>\x{...}</code> 形式，花括号内是 1 到 6 位的十六进制 Unicode 码点。
+<pre><code class="language-flurry">'\x{41}' -- == 'A'
+'\x{3A3}' -- == 'Σ' (希腊字母 Sigma)
+'\x{1F600}' -- 😀 (笑脸 Emoji)
+</code></pre>
+</li>
+</ul>
+<h3 id="4-字符串-string"><a class="header" href="#4-字符串-string">4. 字符串 (String)</a></h3>
+<p>字符串表示一系列字符，用<strong>双引号 <code>"</code> <code>"</code></strong> 括起来。</p>
+<ul>
+<li><strong>基本字符串</strong>:
+<pre><code class="language-flurry">"Hello, Flurry!"
+"这是一个包含 Unicode 的字符串：你好 Σ 😀"
+"" -- 空字符串
+</code></pre>
+</li>
+<li><strong>转义序列</strong>: 字符串内部支持与字符字面量相同的转义序列。
+<pre><code class="language-flurry">"第一行\n第二行\t缩进"
+"路径是: \"C:\\Program Files\\\""
+</code></pre>
+</li>
+<li><strong>字面量合并 (Concatenation)</strong>: 多个相邻的字符串字面量（仅由空白分隔）会被编译器自动合并成一个单一的字符串。这对于书写长字符串或跨行书写很有用。
+<pre><code class="language-flurry">let long_message = "这是第一部分, "
+                   "这是第二部分, "
+                   "这是最后一部分.";
+-- 等价于: let long_message = "这是第一部分, 这是第二部分, 这是最后一部分.";
+</code></pre>
+</li>
+<li><strong>原始字符串 (Raw Strings)</strong>: 对于需要包含大量特殊字符（如正则表达式、代码片段、多行文本）而无需转义的情况，可以使用原始字符串，其通过<code>builtin.raw_str</code>宏提供，<code>{}</code> 内的所有内容（包括换行符）都将按原样成为字符串的一部分。
+<pre><code class="language-flurry">-- 假设语法
+let regex_pattern = builtin.raw_str'{^\d{4}-\d{2}-\d{2}$}
+let multi_line = builtin.raw_str'{
+这是一个多行文本，
+内部的 "引号" 和 \ 反斜杠
+都无需转义。
+}
+</code></pre>
+</li>
+<li><strong>编译时类型</strong>: 需要特别指出的是，在 Flurry 中，<strong>字符串字面量 <code>"..."</code> 本身很可能属于编译时类型 <code>str</code></strong> (或类似的代数字符串类型)，它代表了编译时已知的文本内容。这使得它们可以用于 <code>comptime</code> 计算和字符串插值。运行时的、可变的或堆分配的字符串可能是另一种类型（例如 <code>String</code>）。</li>
+<li><strong>编译时插值 (<code>$variable</code>)</strong>: 字符串字面量支持使用 <code>$identifier</code> 的形式嵌入<strong>编译时已知</strong>的变量或常量的值。
+<pre><code class="language-flurry">comptime const VERSION = "0.1.0";
+const MESSAGE = "Welcome to Flurry version $VERSION!";
+-- MESSAGE 的值在编译时确定为 "Welcome to Flurry version 0.1.0!"
+</code></pre>
+注意：这与运行时的字符串格式化（例如 <code>println</code> 中使用的 <code>{}</code> 占位符）是不同的概念。</li>
+<li><strong>变体后缀 (Variant Suffixes)</strong>: 字符串字面量后可以跟特定的标识符后缀来创建特殊类型的字符串表示：
+<ul>
+<li><code>"..."c</code> (<strong>C String Variant</strong>): 创建一个与 C 语言 ABI 兼容的字符串表示，通常意味着以空字符 (<code>\0</code>) 结尾，并可能使用特定的编码（如 UTF-8）。用于 FFI 交互。</li>
+<li><code>"..."b</code> (<strong>Byte String Variant</strong>): 将字符串字面量的内容解释为一个字节序列（通常是 <code>Slice&lt;u8&gt;</code> 或类似类型），忽略其文本编码。用于处理原始二进制数据。</li>
+</ul>
+</li>
+</ul>
+<h3 id="5-布尔值-boolean"><a class="header" href="#5-布尔值-boolean">5. 布尔值 (Boolean)</a></h3>
+<p>表示逻辑真或假。</p>
+<ul>
+<li><code>true</code>: 真</li>
+<li><code>false</code>: 假</li>
+</ul>
+<p>它们是 Flurry 的内置布尔类型 (<code>bool</code>) 的唯二值。</p>
+<h3 id="6-null-字面量"><a class="header" href="#6-null-字面量">6. <code>null</code> 字面量</a></h3>
+<p><code>null</code> 是一个特殊的字面量，用于表示 Flurry 中<strong>可选类型 (<code>?T</code>)</strong> 的“无值”状态。它本身可能没有独立的类型，而是作为可选类型的特殊值存在。</p>
+<pre><code class="language-flurry">let maybe_value: ?i32 = null;
+</code></pre>
+<h3 id="7-符号-symbol"><a class="header" href="#7-符号-symbol">7. 符号 (Symbol)</a></h3>
+<p>符号是一种独特的字面量类型，以点 <code>.</code> 开头，后跟一个标识符。它们代表编译时唯一的标识符常量。具体细节将在 <a href="core/basics/symbols.html">符号</a> 章节中讨论。</p>
+<pre><code class="language-flurry">.ok
+.error
+.my_custom_symbol
+</code></pre>
+<p>掌握 Flurry 丰富而精确的字面量表示法，是有效利用其类型系统和编译时能力的基础。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/basics/lexical.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/basics/primitives.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/basics/lexical.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/basics/primitives.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>模式语法 - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="模式语法-pattern-syntax"><a class="header" href="#模式语法-pattern-syntax">模式语法 (Pattern Syntax)</a></h1>
+<p>模式 (Pattern) 是 Flurry 中用于匹配值的语法结构。以下是 Flurry 支持的主要模式类型：</p>
+<p><strong>1. 基本模式 (Basic Patterns)</strong></p>
+<p>这些是最简单的模式，用于匹配字面量或进行简单的绑定/忽略。</p>
+<ul>
+<li><strong>字面量模式 (Literal Patterns)</strong>: 直接匹配整数、浮点数、字符、字符串、布尔值或 <code>null</code>。
+<pre><code class="language-flurry">if value is {
+    0 =&gt; println("Zero"),
+    'a' =&gt; println("The character 'a'"),
+    "hello" =&gt; println("Got hello"),
+    true =&gt; println("It's true"),
+    null =&gt; println("It's null"),
+    _ =&gt; println("Something else"), -- 通配符模式
+}
+</code></pre>
+</li>
+<li><strong>标识符模式 (Identifier Pattern) / 变量绑定</strong>: 匹配任何值，并将其绑定到一个新的变量上。该变量在匹配分支的作用域内可用。
+<pre><code class="language-flurry">if some_option is {
+    data? =&gt; println("Got data: {}", data), -- data 绑定了 some 内部的值
+    null =&gt; println("No data"),
+}
+</code></pre>
+</li>
+<li><strong>通配符模式 (<code>_</code>)</strong>: 匹配任何值，但不将其绑定到变量。用于忽略不关心的值或部分结构。
+<pre><code class="language-flurry">let (x, _, z) = (1, 2, 3); -- 忽略元组的第二个元素
+</code></pre>
+</li>
+<li><strong>符号模式 (<code>.symbol</code>)</strong>: 匹配特定的符号字面量。常用于匹配枚举变体或<code>Symbol</code>类型。
+<pre><code class="language-flurry">if status is {
+    .ok =&gt; println("Status is Ok"),
+    .error =&gt; println("An error occurred"),
+    -- ...
+}
+</code></pre>
+</li>
+</ul>
+<p><strong>2. 容器模式 (Container Patterns)</strong></p>
+<p>用于解构和匹配复合数据结构。</p>
+<ul>
+<li><strong>列表/数组/切片模式 (<code>[pattern1, pattern2, ...]</code>)</strong>: 匹配列表、数组或切片。
+<ul>
+<li>可以匹配固定长度：<code>[first, second]</code></li>
+<li>可以使用 <code>...rest_binding</code> 捕获剩余元素（Rest Pattern）：<code>[head, ...tail]</code></li>
+<li>可以匹配空列表：<code>[]</code></li>
+</ul>
+<pre><code class="language-flurry">if items is {
+    [] =&gt; println("Empty list"),
+    [one] =&gt; println("One item: {}", one),
+    [first, second, ...rest] =&gt; println("First: {}, Second: {}, Rest: {any}", first, second, rest),
+    -- ...
+}
+</code></pre>
+</li>
+<li><strong>元组模式 (<code>(pattern1, pattern2, ...)</code>)</strong>: 按位置解构元组。
+<pre><code class="language-flurry">let (id, name, _) = get_user_info(); -- 解构元组，忽略第三个元素
+</code></pre>
+</li>
+<li><strong>记录/结构体模式 (<code>{ field1: pattern1, field2, ... }</code>)</strong>: 按字段名解构结构体或 <code>object</code>。
+<ul>
+<li><code>field: pattern</code>: 将字段 <code>field</code> 的值与 <code>pattern</code> 匹配。</li>
+<li><code>field</code>: 字段名简写，等同于 <code>field: field</code>，即将字段值绑定到同名变量。</li>
+<li><code>...</code>: （可能支持）用于表示匹配剩余字段，但通常结构体匹配是精确的或显式忽略。</li>
+</ul>
+<pre><code class="language-flurry">struct Point { x: i32, y: i32 }
+let p = Point { .x 10, .y 20 }
+if p is {
+    -- 使用字段名简写和显式模式
+    { x: 0, y } =&gt; println("On Y axis at {}", y),
+    { x, y: 0 } =&gt; println("On X axis at {}", x),
+    { x, y }    =&gt; println("Point at ({}, {})", x, y),
+}
+</code></pre>
+</li>
+</ul>
+<p><strong>3. 调用模式 (Call Patterns)</strong></p>
+<p>用于匹配枚举变体或构造器调用的结果，常用于解构带有数据的枚举。</p>
+<ul>
+<li><strong>圆括号调用模式 (<code>pattern (pattern1, ...)</code> 或 <code>pattern (pattern1, ...)</code>?)</strong>: 匹配特定的枚举变体（带有关联数据）、代数效应调用。
+<pre><code class="language-flurry">enum Message { quit, write(String), move { x: i32, y: i32 } }
+if msg is {
+    -- 匹配不带数据的变体
+    .quit =&gt; println("Quit message"),
+    -- 匹配 Write 变体，并将内部 String 绑定到 text
+    .write(text) =&gt; println("Write: {}", text),
+    -- 匹配 Move 变体，并使用记录模式解构其关联数据
+    .move { x, y: 0 } =&gt; println("Move on X axis to {}", x),
+    .move { x, y } =&gt; println("Move to ({}, {})", x, y),
+}
+</code></pre>
+</li>
+<li><strong>尖括号调用模式 (<code>pattern&lt;...&gt;(...)</code> 或 <code>pattern&lt;...&gt;(...)</code>)</strong>: 用于匹配带有泛型参数的代数效应调用、类型表达式。</li>
+<li><strong>花括号调用模式 (<code>pattern{...}</code> 或 <code>pattern{...}</code>):</strong> 用于匹配使用记录语法的变体或构造器（如上例中的 <code>move</code>）。</li>
+</ul>
+<p><strong>4. 范围模式 (Range Patterns)</strong></p>
+<p>用于匹配数值或字符是否落在某个范围内。</p>
+<ul>
+<li><strong>开区间上限 (<code>..end</code>)</strong>: 匹配小于 <code>end</code> 的值。（之前讨论过，可能需要确认语法）</li>
+<li><strong>闭区间 (<code>start..=end</code>)</strong>: 匹配大于等于 <code>start</code> 且小于等于 <code>end</code> 的值。</li>
+<li><strong>开区间 (<code>start..end</code>)</strong>: 匹配大于等于 <code>start</code> 且小于 <code>end</code> 的值。</li>
+<li><strong>闭区间下限 (<code>start..</code>)</strong>: 匹配大于等于 <code>start</code> 的值。
+<pre><code class="language-flurry">if value is {
+    0..=9 =&gt; println("Single digit"),
+    10..=99 =&gt; println("Two digits"),
+    100.. =&gt; println("Three or more digits"),
+    ..0 =&gt; println("Negative or zero? Check exact rules"), -- 语法和含义需确认
+}
+if character is {
+    'a'..='z' =&gt; println("Lowercase letter"),
+    'A'..='Z' =&gt; println("Uppercase letter"),
+    _ =&gt; println("Not a letter"),
+}
+</code></pre>
+</li>
+</ul>
+<p><strong>5. 组合模式 (Combination Patterns)</strong></p>
+<p>允许将多个模式组合起来。</p>
+<ul>
+<li><strong>或模式 (<code>pattern1 or pattern2</code>)</strong>: 如果值匹配 <code>pattern1</code> <strong>或</strong> <code>pattern2</code>，则匹配成功。用于合并相似的分支。
+<pre><code class="language-flurry">if character is {
+    'a' or 'e' or 'i' or 'o' or 'u' =&gt; println("Lowercase vowel"),
+    'A' or 'E' or 'I' or 'O' or 'U' =&gt; println("Uppercase vowel"),
+    _ =&gt; println("Consonant or other"),
+}
+</code></pre>
+<strong>注意</strong>: 在 <code>or</code> 模式中，所有分支绑定的变量必须<strong>名称和类型都相同</strong>，或者只使用 <code>_</code> 忽略。</li>
+<li><strong>与模式 (<code>pattern1 and expr is pattern2</code>)</strong>: 如果值匹配 <code>pattern1</code>，并且 <code>expr</code> 的值匹配 <code>pattern2</code>，则匹配成功。用于在模式中嵌套其他表达式。
+<pre><code class="language-flurry">-- 选课逻辑展示
+fn select_course(student: Student, course: Course) {
+	if student is { class_id: class_id? }
+		and get_class(class_id) is class?
+		and get_major(class.major_id) is major?
+		if course.satified(major) {
+		println("选课成功")
+	}
+}
+</code></pre>
+</li>
+</ul>
+<p><strong>6. 绑定模式 (<code>pattern as identifier</code>)</strong></p>
+<p>在匹配 <code>pattern</code> 的同时，将<strong>整个匹配到的值</strong>（未解构的）绑定到一个新的变量 <code>identifier</code> 上。</p>
+<pre><code class="language-flurry">if message is {
+    -- 匹配 move 变体，解构 x，并将整个 move 变体绑定到 m
+    .move { x: 10, y } as msg =&gt; {
+        println("Move to x=10 at y={}", y);
+        process_move_message(msg); -- 使用绑定的整个消息 msg
+    }
+    -- ... 其他分支
+}
+</code></pre>
+<p><strong>7. 条件守卫模式 (<code>pattern if condition_expr</code>)</strong></p>
+<p>只有当值匹配 <code>pattern</code> <strong>并且</strong> <code>condition_expr</code>（一个运行时布尔表达式）求值为 <code>true</code> 时，模式才算匹配成功。<code>condition_expr</code> 可以使用 <code>pattern</code> 中绑定的变量。</p>
+<pre><code class="language-flurry">if maybe_point is {
+    { x, y }? if x == y =&gt; { -- 匹配结构体 Point
+        println("Point on diagonal: ({}, {})", x, y);
+    },
+    { x, y }? =&gt; { -- 其他结构体情况
+        println("Point not on diagonal: ({}, {})", x, y);
+    }
+    _ =&gt; println("Not a point"),
+}
+</code></pre>
+<p><strong>8. 其他模式</strong></p>
+<ul>
+<li><strong>可选模式 (<code>pattern?</code>)</strong>: 用于匹配可空类型的非空部分，并解构其内部值。（如 <code>if opt is data? { ... }</code>）</li>
+<li><strong>正确模式</strong>: 用于匹配结果类型的成功部分，并解构其内部值。（如 <code>if result is data! { ... }</code>）</li>
+<li><strong>错误模式</strong>: 用于匹配结果类型的错误部分，并解构其内部值。（如 <code>if result is error err { ... }</code>）</li>
+<li><strong>表达式模式 (<code>&lt;expr&gt;</code>)</strong>: 将编译时表达式 <code>expr</code> 的求值结果作为模式进行匹配。</li>
+<li><strong>位向量模式 (<code>0x(...)</code>, <code>0o(...)</code>, <code>0b(...)</code>)</strong>: 匹配和解构位向量字面量。</li>
+<li><strong>字符串前缀模式 (<code>"prefix" ++ rest_binding</code>)</strong>: 匹配以特定前缀开头的字符串。</li>
+<li><strong>否定模式 (<code>not pattern</code>)</strong>: 匹配不符合 <code>pattern</code> 的值。</li>
+<li><strong>类型绑定模式 (<code>'id</code>)</strong>: 用于匹配类型表达式，为了方便起见，类型模式中的id通常会被解析为表达式，因此变量绑定需要新的语法，如<code>Array&lt;'T, 128&gt;</code>。</li>
+</ul>
+<p>Flurry 提供了极为丰富和灵活的模式语法，为数据检查、解构和控制流提供了强大的支持。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/pattern_matching.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/pattern_matching/control_flow.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/pattern_matching.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/pattern_matching/control_flow.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

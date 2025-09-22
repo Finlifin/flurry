@@ -1,0 +1,285 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Flurry: 一个编程语言 - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="flurry-为下一代基础设施而生"><a class="header" href="#flurry-为下一代基础设施而生">Flurry: 为下一代基础设施而生</a></h1>
+<p>欢迎来到 Flurry 的世界！Flurry 并非又一个通用编程语言，它的诞生承载着一个明确的使命：为构建未来<strong>高性能、高可靠性、高安全性</strong>的计算基础设施提供坚实的基础。</p>
+<h2 id="问题域系统编程的困境"><a class="header" href="#问题域系统编程的困境">问题域：系统编程的困境</a></h2>
+<p>现代数字世界的基石——操作系统、网络协议栈、数据库、虚拟机、云平台——都依赖于系统级编程语言来构建。这些基础设施软件对正确性、性能和资源利用率有着极致的要求。然而，长期以来，主流的系统级语言，特别是 C 和 C++，虽然赋予了开发者无与伦比的底层控制能力，但也因其固有的内存安全问题和并发处理复杂性，成为了无数严重软件缺陷和安全漏洞的温床 <sup class="footnote-reference" id="fr-1-1"><a href="#footnote-1">1</a></sup>。</p>
+<p>近年来，像 Rust 这样的语言通过引入所有权和借用检查等创新机制，在编译时提供了强大的内存和线程安全保证，极大地改善了现状。但这并非终点。为了实现必要的底层控制和极致性能，即使是 Rust 也需要 <code>unsafe</code> 代码块，这道“后门”重新引入了对形式化验证的需求，以确保安全边界的稳固<sup class="footnote-reference" id="fr-2-1"><a href="#footnote-2">2</a></sup>。此外，仅仅保证内存和线程安全是不够的，基础设施软件还需要深层次的<strong>功能正确性</strong>——即程序必须精确地按照其复杂规范运行。现有的验证技术在面对系统编程的复杂性（指针算术、细粒度并发、硬件交互、复杂的别名）时，往往捉襟见肘<sup class="footnote-reference" id="fr-3-1"><a href="#footnote-3">3</a></sup>。</p>
+<p>我们相信，是时候需要一种新的系统级编程语言了——它不仅要提供现代语言的安全性与开发效率，还要在设计之初就<strong>内建对高级验证和复杂系统建模的支持</strong>，并提供无与伦比的<strong>编译时能力</strong>来消除抽象开销和实现深度优化。</p>
+<h2 id="flurry-的答案安全性能与表现力的融合"><a class="header" href="#flurry-的答案安全性能与表现力的融合">Flurry 的答案：安全、性能与表现力的融合</a></h2>
+<p>Flurry 正是为此而设计的。它旨在成为构建下一代操作系统、网络栈、数据库内核、嵌入式系统以及其他关键基础设施的理想选择。Flurry 的核心理念是在以下几个关键维度上取得突破性的进展：</p>
+<ol>
+<li>
+<p><strong>内建安全性与验证支持</strong>:</p>
+<ul>
+<li><strong>分级安全模型</strong>: 提供 <code>unsafe</code>, <code>safe</code>, <code>verified</code> 三个安全级别，允许开发者明确风险并逐步提升代码可信度。</li>
+<li><strong>创新的安全机制</strong>: 超越传统借用检查，探索结合<strong>仿射类型、可达性类型系统和副作用系统</strong>，旨在提供灵活且强大的静态安全保证。</li>
+<li><strong>面向验证的设计</strong>: 语言核心特性（如代数效应、<code>comptime</code> 元编程）的设计考虑了与形式化方法（如 Outcome Separation Logic, Reachability Logic, Matching Logic）的集成可能性，目标是让深度验证更加可行。</li>
+</ul>
+</li>
+<li>
+<p><strong>极致的编译时能力 (<code>comptime</code>)</strong>:</p>
+<ul>
+<li><strong>图灵完备的编译时执行</strong>: Flurry 拥有一个功能强大的编译时运行时，允许在编译阶段执行任意复杂的计算、代码生成和静态检查。</li>
+<li><strong>零成本抽象</strong>: 泛型、元编程和高级抽象通过编译时计算实现单态化和优化，不引入运行时开销。</li>
+<li><strong>编译时配置与构建</strong>: 包管理、特性标志、甚至构建逻辑都可以使用 Flurry 自身的 <code>comptime</code> 代码定义，提供无与伦比的灵活性。</li>
+</ul>
+</li>
+<li>
+<p><strong>富有表现力且一致的语法</strong>:</p>
+<ul>
+<li><strong>现代特性</strong>: 吸收并改进了代数效应、强大的模式匹配、Trait 系统、层级化枚举等现代语言特性。</li>
+<li><strong>创新语法</strong>: 引入 <code>expr object</code> DSL 构建、<code>expr ' image</code> 取像、<code>extend</code> 作用域扩展、<code>.tagged_polymorphic</code> 多态等独特语法，旨在提升特定场景下的表达力和简洁性。</li>
+<li><strong>一致性</strong>: 追求语法元素（如 <code>.</code>, <code>^</code>, <code>'</code>）在不同上下文中的一致语义。</li>
+</ul>
+</li>
+<li>
+<p><strong>性能与控制力</strong>:</p>
+<ul>
+<li><strong>系统级定位</strong>: 提供必要的底层控制能力（如指针操作，但需在 <code>unsafe</code> 中或得到验证）。</li>
+<li><strong>面向性能的设计</strong>: 编译时计算、潜在的优化（如 <code>tagged_polymorphic</code> 分派）都旨在生成高效的本地代码。</li>
+</ul>
+</li>
+</ol>
+<h2 id="为什么选择-flurryteaser"><a class="header" href="#为什么选择-flurryteaser">为什么选择 Flurry？(Teaser)</a></h2>
+<ul>
+<li><strong>超越 Rust 的安全边界</strong>: 在提供 <code>safe</code> 基础的同时，为 <code>unsafe</code> 和功能正确性提供内建的、更强大的验证路径。</li>
+<li><strong>Zig 级别的编译时能力，甚至更强</strong>: <code>comptime</code> 是 Flurry 的核心支柱，深度集成到类型系统、元编程和构建过程中。</li>
+<li><strong>代数效应带来的结构化并发与控制流</strong>: 提供比传统回调、Promise、async/await 更灵活、更可组合的副作用和控制流管理。</li>
+<li><strong>独特的 DSL 构建能力</strong>: <code>expr object</code> 和 <code>extend</code> 字面量拓展等特性使得构建嵌入式领域特定语言极其自然。</li>
+<li><strong>为复杂系统而生的模块化与验证支持</strong>: 从包管理到形式化方法集成，都旨在应对大型、关键系统的挑战。</li>
+</ul>
+<p>Flurry 是一项雄心勃勃的探索，它试图站在现有系统语言的肩膀上，融合最新的编程语言理论研究，为未来构建更安全、更可靠、更高效的数字基础设施提供下一代利器。我们邀请您一同踏上这段激动人心的旅程！</p>
+<hr />
+<hr>
+<ol class="footnote-definition"><li id="footnote-1">
+<p>Memory-Safe Programming Languages and National Cybersecurity ... <a href="#fr-1-1">↩</a></p>
+</li>
+<li id="footnote-2">
+<p>Surveying the Rust Verification Landscape - arXiv <a href="#fr-2-1">↩</a></p>
+</li>
+<li id="footnote-3">
+<p>Concurrent Separation Logic <a href="#fr-3-1">↩</a></p>
+</li>
+</ol>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+                            <a rel="next prefetch" href="../introduction/quickstart.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+                    <a rel="next prefetch" href="../introduction/quickstart.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

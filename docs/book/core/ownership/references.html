@@ -1,0 +1,300 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>引用与借用 - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="引用与借用"><a class="header" href="#引用与借用">引用与“借用”</a></h2>
+<p>Flurry 的所有权系统确保了每个值都有一个唯一的所有者，这对于资源管理至关重要。然而，在实际编程中，我们经常需要在不转移所有权的情况下<strong>访问</strong>或<strong>使用</strong>数据。例如，我们可能想让多个函数读取同一个配置对象，或者将一个大数据结构的片段传递给一个处理函数。为了满足这些需求，Flurry 提供了<strong>引用 (References)</strong>。</p>
+<p>与所有权直接控制值本身不同，引用允许我们创建一个指向值的<strong>间接访问途径</strong>。在 Flurry 中，主要的引用类型是指针 (<code>*T</code>) 和切片 (<code>Slice&lt;T&gt;</code>)。</p>
+<h3 id="指针-t"><a class="header" href="#指针-t">指针 (<code>*T</code>)</a></h3>
+<p>指针是内存地址的直接表示，它“指向”内存中某个特定类型 <code>T</code> 的值所在的位置。</p>
+<ul>
+<li><strong>类型</strong>: <code>*T</code> 表示一个指向类型 <code>T</code> 的值的指针。Flurry <strong>不</strong>在类型层面显式区分可变与不可变指针（即没有类似 Rust 的 <code>&amp;T</code> vs <code>&amp;mut T</code>）。一个 <code>*T</code> 是否允许修改其指向的数据，可能取决于指针的来源、上下文（如函数参数是否允许修改）或是否在 <code>unsafe</code> 块内。<em>（TODO: 明确指针的可变性规则和保证机制）</em></li>
+<li><strong>获取指针</strong>: 可以使用后缀 <code>.ref</code> 操作符来获取一个值的指针。
+<pre><code class="language-flurry">let data = MyData { ... }
+let data_ptr: *MyData = data.ref; -- 获取 data 的指针
+</code></pre>
+</li>
+<li><strong>解引用</strong>: 可以使用后缀 <code>.*</code> 操作符来访问指针指向的值。
+<pre><code class="language-flurry">let value_copy = data_ptr.*; -- 解引用，获取 data 的一个副本（如果 MyData 是 Copy）
+                           -- 或者可能获取对 data 内部字段的访问权
+-- (解引用的具体语义，特别是对于非 Copy 类型，需要进一步明确)
+
+-- 访问字段或调用方法通常通过指针自动解引用（如果语言支持）或显式解引用
+-- println(data_ptr.some_field);  -- 类似 C/Zig 的隐式解引用？
+-- println((data_ptr.*).some_field); -- 或者需要显式解引用？
+-- data_ptr.some_method();       -- 方法调用是否自动解引用？
+</code></pre>
+<em>TODO: 明确指针访问成员和调用方法的具体语法和解引用规则。</em></li>
+<li><strong>安全性</strong>: 直接操作原始指针（进行算术运算、类型转换等）通常被认为是 <code>unsafe</code> 操作。然而，Flurry 的目标是利用其<strong>可达性类型系统</strong>和<strong>副作用系统</strong>来保证即使是传递和使用指针（由 <code>.ref</code> 创建，并在 <code>safe</code> 代码中传递）也是安全的，主要是防止悬垂指针（即指针指向的内存不再有效或已被释放）。</li>
+</ul>
+<h3 id="切片-slicet"><a class="header" href="#切片-slicet">切片 (<code>Slice&lt;T&gt;</code>)</a></h3>
+<p>切片提供了一种指向内存中<strong>连续序列</strong>（如数组、向量或字符串的一部分）的视图。切片本身通常不拥有数据，而是“借用”了底层数据的一部分。</p>
+<ul>
+<li><strong>类型</strong>: <code>Slice&lt;T&gt;</code> 表示一个包含 <code>T</code> 类型元素的连续序列的引用。</li>
+<li><strong>构成</strong>: 一个切片通常包含两部分信息：一个指向序列起始元素的指针，以及序列的长度。</li>
+<li><strong>创建</strong>: 可以从数组、向量或其他支持切片操作的数据结构创建切片。
+<pre><code class="language-flurry">let array = [1, 2, 3, 4, 5];
+let full_slice: Slice&lt;i32&gt; = array.slice(..); -- 获取整个数组的切片
+let partial_slice = array.slice(1..4); -- 获取索引 1 到 3 (不含 4) 的切片
+</code></pre>
+<em>TODO: 确认切片创建的具体语法。</em></li>
+<li><strong>用途</strong>: 切片非常适合用于处理数据缓冲区、字符串视图等，它允许函数操作数据的子集而无需复制或转移整个数据结构的所有权。</li>
+<li><strong>安全性</strong>: 与指针类似，切片的有效性（确保它指向的底层数据在切片存续期间保持有效）也依赖于 Flurry 的可达性类型系统和副作用系统的保证。</li>
+</ul>
+<h3 id="借用-的概念"><a class="header" href="#借用-的概念">"借用" 的概念</a></h3>
+<p>虽然 Flurry 可能没有像 Rust 那样严格且形式化的“借用检查器 (Borrow Checker)”术语和规则集，但<strong>引用的核心目的</strong>仍然是实现<strong>临时、非拥有式的数据访问</strong>，这在概念上就是一种**“借用”**。</p>
+<ul>
+<li><strong>不转移所有权</strong>: 当你通过 <code>.ref</code> 获取指针或创建切片时，原始数据的所有权<strong>不会</strong>发生转移。原始所有者仍然负责数据的生命周期和最终的清理。</li>
+<li><strong>生命周期依赖</strong>: 引用的有效性<strong>依赖于</strong>其指向的数据的生命周期。引用不能比它所指向的数据活得更长。这是 Flurry 的可达性分析和副作用系统需要强制执行的关键保证。</li>
+</ul>
+<p><strong>示例对比:</strong></p>
+<pre><code class="language-flurry">fn consume_data(data: MyData) { -- 接受所有权
+    -- data 在此被消耗或在函数结束时 drop
+}
+
+fn use_data_ref(data_ref: *MyData) { -- "借用" 数据
+    -- 通过 data_ref 访问数据，但不拥有它
+    let field_value = data_ref.*.some_field; -- 假设需要显式解引用
+    -- ...
+} -- data_ref 指针本身离开作用域，但不影响原始 data
+
+fn main() {
+    let my_data = MyData { ... }
+
+    let data_ptr = my_data.ref; -- 创建引用（借用）
+    use_data_ref(data_ptr);    -- 传递引用
+    use_data_ref(my_data.ref); -- 再次创建并传递引用 (OK)
+
+    consume_data(my_data);    -- 转移所有权
+    -- use_data_ref(data_ptr);    -- 编译错误！data_ptr 现在是悬垂指针，指向的数据已被移动
+                               -- (Flurry 的安全系统需要能捕捉到这个)
+}
+</code></pre>
+<h3 id="总结"><a class="header" href="#总结">总结</a></h3>
+<p>引用（指针和切片）是 Flurry 中实现数据共享和非拥有式访问的关键机制。通过 <code>.ref</code> 获取指针，通过切片语法获取序列视图，可以在不干扰所有权的情况下传递和使用数据。Flurry 不依赖显式的 <code>mut</code> 区分可变/不可变引用类型，而是计划通过其独特的<strong>可达性类型系统</strong>和<strong>副作用系统</strong>来保证引用的有效性（防止悬垂引用），从而在提供灵活性的同时确保内存安全。理解引用的“借用”本质及其与所有权的区别，对于编写正确的 Flurry 程序至关重要。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/ownership/affine_move.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/ownership/drop.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/ownership/affine_move.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/ownership/drop.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

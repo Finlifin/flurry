@@ -1,0 +1,381 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>动态多态 (dyn Trait vs tagged_polymorphic) - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="动态多态-dyn-trait-vs-tagged_polymorphic"><a class="header" href="#动态多态-dyn-trait-vs-tagged_polymorphic">动态多态 (<code>dyn Trait</code> vs <code>tagged_polymorphic</code>)</a></h1>
+<p>动态多态允许在运行时根据对象的实际类型来决定调用哪个方法实现。这对于处理异构集合、实现回调或插件系统等场景非常有用。Flurry 提供了两种主要的动态多态机制，它们各有优劣，适用于不同的场景。</p>
+<h2 id="1-trait-object-dyn-trait"><a class="header" href="#1-trait-object-dyn-trait">1. Trait Object (<code>dyn Trait</code>)</a></h2>
+<p>Trait Object 是实现动态多态的标准、开放的方式，类似于 Rust 的 <code>dyn Trait</code> 或 C++ 的虚函数机制（通过指针或引用）。</p>
+<p><strong>概念:</strong></p>
+<ul>
+<li>一个 <code>dyn TraitName</code> 类型的值是一个<strong>胖指针 (fat pointer)</strong>。它包含两部分：
+<ol>
+<li>一个指向实际对象数据的指针。</li>
+<li>一个指向该对象类型为 <code>TraitName</code> 实现的<strong>虚函数表 (vtable)</strong> 或等效结构（如接口表 itable）的指针。</li>
+</ol>
+</li>
+<li>vtable 包含了一系列函数指针，指向该类型为 Trait 定义的每个方法的具体实现。</li>
+</ul>
+<p><strong>用法:</strong></p>
+<p>你可以创建一个 <code>dyn Trait</code> 类型胖指针，它可以在运行时指向任何实现了该 Trait 的类型的实例。</p>
+<pre><code class="language-flurry">trait Speaker {
+    fn speak(*self);
+}
+
+struct Dog { name: String }
+impl Speaker for Dog {
+    fn speak(*self) { println!("{} says Woof!", self.name); }
+}
+
+struct Cat { name: String }
+impl Speaker for Cat {
+    fn speak(*self) { println!("{} says Meow!", self.name); }
+}
+
+test {
+    let dog = Dog { .name "Buddy".to_string() }
+    let cat = Cat { .name "Whiskers".to_string() }
+
+    -- 创建 Trait Object (通过 Box 指针)
+    let animals: Vec&lt;dyn Speaker&gt; = Vec.new();
+    animals.push(Box.new(dog).*.dyn(Speaker));
+    animals.push(Box.new(cat).*.dyn(Speaker));
+
+    -- 动态调用方法
+    for animal in animals.iter() {
+        -- animal 是 dyn Speaker 类型
+        -- 调用 speak 时，会通过 vtable 查找并执行 Dog 或 Cat 的实现
+        animal.speak();
+    }
+    -- 输出:
+    -- Buddy says Woof!
+    -- Whiskers says Meow!
+}
+
+-- 作为函数参数
+fn make_speak(speaker: dyn Speaker) {
+    speaker.speak(); -- 动态分派
+}
+</code></pre>
+<p><strong>优点:</strong></p>
+<ul>
+<li><strong>开放集合 (Open Set)</strong>: 任何类型，在任何地方（遵守孤儿原则或使用 <code>extend</code>），只要实现了 <code>TraitName</code>，就可以在运行时被视为 <code>dyn TraitName</code>。库可以定义 Trait，使用者可以自由实现并传递给库，扩展性极好。</li>
+<li><strong>解耦</strong>: 调用者只需要知道 <code>dyn Trait</code> 接口，无需关心具体实现类型。</li>
+</ul>
+<p><strong>缺点:</strong></p>
+<ul>
+<li><strong>运行时开销</strong>:
+<ul>
+<li><strong>间接调用</strong>: 方法调用需要通过 vtable 进行间接查找，比静态分派慢。</li>
+<li><strong>无法内联</strong>: 编译器无法内联 <code>dyn Trait</code> 的方法调用。</li>
+<li><strong>胖指针开销</strong>: <code>dyn Trait</code> 指针（或引用）本身比普通指针占用更多空间（通常是两倍）。</li>
+</ul>
+</li>
+<li><strong>类型信息部分丢失</strong>: 在 <code>dyn Trait</code> 上下文中，对象的具体类型信息在编译时丢失了（虽然运行时可以通过 RTTI 查询，但通常不鼓励）。</li>
+</ul>
+<h2 id="2-tagged-polymorphism-基于枚举的半自动多态"><a class="header" href="#2-tagged-polymorphism-基于枚举的半自动多态">2. Tagged Polymorphism (基于枚举的半自动多态)</a></h2>
+<p>Flurry 提供了一种替代的、基于标签枚举的动态多态机制，通过在 <code>enum</code> 定义上使用 <code>.tagged_polymorphic TraitName</code> 属性来启用。</p>
+<p><strong>概念:</strong></p>
+<ul>
+<li><strong>载体</strong>: 一个枚举（标记为 <code>.dst true</code> 和 <code>.tagged_polymorphic TraitName</code>）包含所有需要参与此多态的<strong>固定</strong>类型集合作为其变体。</li>
+<li><strong>实现</strong>: 每个枚举变体对应的具体类型（如 <code>Dog</code>, <code>Cat</code>）必须<strong>分别</strong>实现目标 Trait (<code>Speaker</code>)。</li>
+<li><strong>分派</strong>: 当通过枚举实例（通常是指针 <code>*EnumName</code> 或 <code>Box&lt;EnumName&gt;</code>）调用 Trait 方法时，分派逻辑<strong>基于枚举的内部标签 (tag)</strong>。编译器（或运行时）检查标签，确定当前是哪个变体，然后<strong>直接调用</strong>该变体类型对应的 Trait 实现。这通常通过编译时生成的 <code>match</code>/<code>switch</code> 或跳转表完成。</li>
+</ul>
+<p><strong>用法:</strong></p>
+<pre><code class="language-flurry">trait Greeter {
+    fn greet(*self) -&gt; String;
+}
+
+struct EnglishGreeter {}
+impl Greeter for EnglishGreeter { fn greet(*self) -&gt; String { "Hello!".to_string() } }
+
+struct SpanishGreeter {}
+impl Greeter for SpanishGreeter { fn greet(*self) -&gt; String { "¡Hola!".to_string() } }
+
+-- 定义 Tagged Polymorphic 枚举
+enum AnyGreeter {
+    .dst true, -- 表明是动态大小
+    .tagged_polymorphic Greeter, -- 启用基于标签的多态，目标 Trait 是 Greeter
+
+    english: EnglishGreeter, -- 包含具体类型作为变体
+    spanish: SpanishGreeter,
+}
+
+test {
+    -- 创建实例 (需要通过指针或 Box)
+    let greeter1 = Box.new(AnyGreeter.english(EnglishGreeter {}));
+    let greeter2 = Box.new(AnyGreeter.spanish(SpanishGreeter {}));
+
+    let greeters: Vec&lt;Box&lt;AnyGreeter&gt;&gt; = Vec.new();
+    greeters.push(greeter1);
+    greeters.push(greeter2);
+
+    for g in greeters.iter() {
+        -- 调用 greet 方法。分派基于 g 指向的 AnyGreeter 实例的 tag
+        println!("{}", g.greet());
+    }
+    -- 输出:
+    -- Hello!
+    -- ¡Hola!
+}
+
+-- 作为函数参数 (注意类型是具体的枚举指针)
+fn perform_greeting(g: *AnyGreeter) {
+    println!("{}", g.greet()); -- 基于 tag 分派
+}
+</code></pre>
+<p><strong>优点:</strong></p>
+<ul>
+<li><strong>潜在性能优势</strong>:
+<ul>
+<li>分派后通常是<strong>直接调用</strong>，避免了 vtable 的间接性。</li>
+</ul>
+<ul>
+<li><strong>无 vptr 开销</strong>: 对象本身不存储额外的 vptr。</li>
+</ul>
+<ul>
+<li>分支预测可能更友好。</li>
+</ul>
+</li>
+<li><strong>类型信息保留</strong>: 运行时可以轻易检查枚举 tag，获知具体变体类型。</li>
+</ul>
+<p><strong>缺点:</strong></p>
+<ul>
+<li><strong>封闭集合 (Closed Set)</strong>: 最大的限制。所有需要参与多态的类型<strong>必须预先在枚举中定义</strong>。无法在枚举之外添加新的实现类型。</li>
+<li><strong>修改不便</strong>: 添加新类型需要修改枚举定义。</li>
+<li><strong>适用性</strong>: 主要适用于类型集合已知且稳定的场景。</li>
+</ul>
+<p><strong><code>comptime</code> 的作用</strong>: Flurry 强大的 <code>comptime</code> 能力可以缓解封闭集合的问题。库可以提供 <code>comptime</code> 元函数，允许使用者在编译时<strong>动态生成</strong>一个包含他们所需类型列表的 <code>tagged_polymorphic</code> 枚举，从而在终点代码中获得性能优势，而库本身接口可能仍然使用 <code>dyn Trait</code>。</p>
+<p><strong>总结: 何时选择？</strong></p>
+<ul>
+<li><strong>库接口 / 开放扩展性</strong>: 优先选择 <strong><code>dyn Trait</code></strong>。它提供了必要的灵活性和解耦。</li>
+<li><strong>性能关键 / 类型集合固定</strong>: 在应用程序内部或性能瓶颈处，如果涉及的类型集合是已知的、有限的，可以考虑使用 <strong><code>tagged_polymorphic</code> 枚举</strong>以获得潜在的性能提升和更明确的类型信息。</li>
+<li><strong>编译时定制</strong>: 结合 <code>comptime</code>，可以在编译时生成定制的 <code>tagged_polymorphic</code> 枚举，为特定场景提供优化。</li>
+</ul>
+<p>Flurry 同时提供这两种机制，让开发者可以根据具体需求在开放性和性能/类型精确性之间做出权衡。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/traits_polymorphism/extend.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/traits_polymorphism/using.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/traits_polymorphism/extend.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/traits_polymorphism/using.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

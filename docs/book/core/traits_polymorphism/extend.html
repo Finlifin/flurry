@@ -1,0 +1,342 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>扩展 (extend) 与字面量拓展 - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="扩展-extension-与字面量拓展"><a class="header" href="#扩展-extension-与字面量拓展">扩展 (extension) 与字面量拓展</a></h1>
+<p>虽然孤儿原则对于维护大型项目的一致性至关重要，但在某些情况下，我们可能希望<strong>临时性地</strong>或者在<strong>受限的作用域内</strong>为一个类型添加某个 Trait 的行为，即使这违反了孤儿原则。Flurry 提供了 <code>extend</code> 关键字来实现这种受控的扩展。</p>
+<p><code>extend</code> 机制还巧妙地被用作 Flurry <strong>字面量拓展</strong>的基础。</p>
+<p><strong><code>extend</code> 关键字</strong></p>
+<p><code>extend Trait for Type</code> 语法允许你在任何作用域内为一个（可能是外部定义的）类型 <code>Type</code> 提供一个（可能是外部定义的） <code>Trait</code> 的实现。</p>
+<pre><code class="language-flurry">mod external_lib {
+    pub trait Printer {
+        fn print_info(*self);
+    }
+    pub struct Data { pub value: i32 }
+}
+
+mod my_code {
+    use external_lib.{ Printer, Data }
+
+    -- 在 my_code 模块内，为外部类型 Data 实现外部 Trait Printer
+    -- 这违反了孤儿原则，但 extend 允许这样做
+    extend Printer for Data {
+        fn print_info(*self) {
+            println!("My custom print for Data: value = {}", self.value);
+        }
+    }
+
+    pub fn process_data(d: Data) {
+        -- 在这个作用域内，调用 print_info 会使用上面的 extend 实现
+        d.print_info();
+    }
+}
+
+mod another_code {
+     use external_lib.{ Printer, Data }
+     -- 在这个模块，Printer for Data 的 extend 没有被导入，
+     -- 所以无法调用 d.print_info() (除非 external_lib 本身提供了 impl)
+     pub fn process_data_again(d: Data) {
+         -- d.print_info(); -- 编译错误 (假设 external_lib 无 impl)
+         println("Processing data without custom print.");
+     }
+}
+</code></pre>
+<p><strong><code>extend</code> 的关键特性:</strong></p>
+<ol>
+<li>
+<p><strong>绕过孤儿原则</strong>: 允许在任何地方定义实现。</p>
+</li>
+<li>
+<p><strong>作用域限制</strong>: <code>extend</code> 定义的实现<strong>仅在其被定义的词法作用域内有效</strong>。外部代码默认不受此影响。</p>
+</li>
+<li>
+<p><strong>遮盖 (Shadowing)</strong>: 如果在同一个作用域内，同时存在一个类型的常规 <code>impl</code> 和一个 <code>extend</code> 实现，那么**<code>extend</code> 的实现会优先被使用**，它会“遮盖”住 <code>impl</code> 的实现。</p>
+</li>
+<li>
+<p><strong>可命名与导入</strong>: 可以将 <code>extend</code> 块赋予一个常量标识符，然后其他模块可以通过 <code>use</code> 显式导入这个命名扩展，从而将该扩展实现引入到自己的作用域中。</p>
+<pre><code class="language-flurry">mod extensions {
+    use external_lib.{ Printer, Data }
+    -- 将扩展命名为 PrettyPrinterForData
+    pub const PrettyPrinterForData = extend Printer for Data {
+         fn print_info(*self) {
+             println!("*** Pretty Data: {} ***", self.value);
+         }
+    }
+}
+
+mod user_code {
+    use external_lib.Data;
+    use extensions.PrettyPrinterForData; -- 显式导入扩展
+
+    pub fn main() {
+        let d = Data { .value 42 }
+        -- 因为导入了扩展，这里会使用 PrettyPrinterForData 的实现
+        d.print_info(); -- 输出: *** Pretty Data: 42 ***
+    }
+}
+</code></pre>
+<p>这种显式导入机制提供了精确的作用域控制。</p>
+</li>
+</ol>
+<p><strong><code>extend</code> 用于字面量拓展</strong></p>
+<p>Flurry 利用 <code>extend</code> 机制实现了一种强大且统一的<strong>字面量拓展</strong>功能。当你编写类似 <code>10px</code> 或 <code>"hello"c</code> 的代码时，编译器实际上是在查找一个为该字面量对应的内置类型（如 <code>Integer</code>, <code>u32</code>, <code>str</code>）定义的、包含名为 <code>px</code> 或 <code>c</code> 的方法的 <code>extend</code> 块。</p>
+<p><strong>原理:</strong></p>
+<p><code>literal + identifier</code> 形式会被编译器尝试解析为 <code>literal.identifier()</code> 的方法调用。这个方法必须由一个在当前作用域内有效的 <code>extend</code> 块提供。</p>
+<pre><code class="language-flurry">-- 为内置类型 u32 扩展一个 px 方法
+extend u32 {
+    -- 'px' 方法接收 u32 值，返回 Pixel 类型
+    comptime fn px(self) -&gt; Pixel {
+        Pixel { .value self } -- 假设 Pixel struct 已定义
+    }
+}
+
+-- 为内置 str 类型扩展一个 cstr 方法
+extend str {
+    -- 'cstr' 方法接收编译时 str，返回某种 C 兼容字符串表示
+    comptime fn cstr(self) -&gt; CString { -- 假设 CString 类型存在
+        -- ... 编译时或运行时逻辑来创建 CString ...
+        CString.from_str_with_null(self)
+    }
+}
+
+test {
+    let length = 100px; -- 等价于 (100).px()
+    asserts length.value == 100;
+
+    let c_string = "api_key"cstr; -- 等价于 ("api_key").cstr()
+    -- c_string 现在是一个 CString 实例
+}
+</code></pre>
+<ul>
+<li>这个机制允许开发者或库为基础类型添加与领域相关的单位或转换，使代码更具表现力。</li>
+<li>语言可以内置一些常用的拓展，如 <code>"..."cstr</code> 用于 FFI，<code>"..."bytes</code> 用于创建字节序列。</li>
+<li>这些 <code>extend</code> 实现同样遵循作用域规则，可以被局部定义或通过 <code>use</code> 导入。</li>
+</ul>
+<p><strong>总结</strong></p>
+<p><code>extend</code> 是 Flurry 提供的一种受控方式，用于在标准 <code>impl</code> 和孤儿原则之外为类型添加行为。它的作用域限制和显式导入机制避免了全局冲突，同时为局部行为定制和实现优雅的字面量拓展提供了强大的支持。使用 <code>extend</code> 时需要注意其作用域和对代码可读性的潜在影响。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/traits_polymorphism/traits.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/traits_polymorphism/dynamic.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/traits_polymorphism/traits.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/traits_polymorphism/dynamic.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

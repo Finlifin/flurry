@@ -1,0 +1,382 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>代数效应 (Algebraic Effects) - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="代数效应--结构化的控制流与副作用管理-algebraic-effects-structured-control-flow-and-effect-management"><a class="header" href="#代数效应--结构化的控制流与副作用管理-algebraic-effects-structured-control-flow-and-effect-management">代数效应 —— 结构化的控制流与副作用管理 (Algebraic Effects: Structured Control Flow and Effect Management)</a></h2>
+<p>在掌握了 Flurry 强大的编译时计算和精确的类型谓词之后，我们将探索 Flurry 用于处理程序动态行为——特别是<strong>副作用 (Side Effects)</strong> 和<strong>非局部控制流 (Non-local Control Flow)</strong>——的核心机制：<strong>代数效应 (Algebraic Effects)</strong>。代数效应提供了一种比传统异常处理、状态传递或 Monad 更具结构化、更灵活且更可组合的方式来管理程序的计算效应。</p>
+<p><strong>1. 概念定义：请求与处理的分离</strong></p>
+<p>让我们从核心概念开始。在 Flurry 中，可以将代数效应理解为一种<strong>请求-响应模型</strong>，但作用于函数调用栈之间：</p>
+<ul>
+<li><strong>请求 (Request / Effect Operation)</strong>: 当一个被调用函数 (Callee) 执行到一个需要外部“帮助”或需要改变常规控制流的点时（例如，需要进行 I/O、读取/修改共享状态、抛出可恢复错误、实现协程等），它<strong>并不直接执行</strong>这个操作。相反，它<strong>发出</strong> 一个<strong>效应 (Effect) 调用</strong>。这个效应本质上是一个带有参数的“请求”，表明它需要某种特定的操作或决策。</li>
+<li><strong>处理 (Handling)</strong>: 这个发出的效应会沿着<strong>调用栈向上传播</strong>，直到遇到一个为该效应安装的<strong>效应处理器 (Effect Handler)</strong>。</li>
+<li><strong>决策权转移</strong>: 处理器<strong>拦截</strong>这个效应，并根据效应的类型和参数<strong>决定如何响应</strong>。处理器拥有完全的控制权，它可以：
+<ul>
+<li>执行请求的操作（例如，实际执行 I/O）。</li>
+<li>修改请求的参数。</li>
+<li>向 Callee 返回一个值。</li>
+<li>完全改变控制流（例如，不恢复 Callee 的执行，而是直接返回到更高层的调用者，类似异常）。</li>
+<li>甚至多次恢复 Callee 的执行（用于实现协程、生成器等）。</li>
+</ul>
+</li>
+<li><strong>关注点分离</strong>: 这种机制完美地实现了<strong>关注点分离</strong>。执行计算的函数 (Callee) 只需关心在何时需要何种效应（发出请求），而<strong>不必关心效应如何被实现</strong>。效应的具体实现（如何执行 I/O、如何管理状态、如何处理错误）则由调用者 (Caller) 通过安装不同的处理器来灵活地定义。</li>
+</ul>
+<p><strong>与传统方法的对比:</strong></p>
+<ul>
+<li><strong>异常处理</strong>: 传统的异常处理（如 C++ <code>throw</code>/<code>catch</code>, Java <code>try</code>/<code>catch</code>）只能单向地将控制权向上传递，并且通常难以恢复到抛出点。代数效应的处理器可以选择<strong>恢复 (resume)</strong> Callee 的执行。</li>
+<li><strong>状态传递/Monad</strong>: 手动传递状态或使用 Monad 会将副作用的处理逻辑侵入到函数签名和实现中，降低代码的直接性和可组合性。代数效应将效应处理逻辑与核心计算逻辑解耦。</li>
+</ul>
+<p><strong>2. 声明效应 (<code>effect</code>)</strong></p>
+<p>要使用代数效应，首先需要声明它们。我们使用 <code>effect</code> 关键字来定义一个新的效应操作，它看起来有点像定义一个函数签名：</p>
+<pre><code class="language-flurry">-- 声明一个名为 'ask' 的效应，它没有参数，期望返回一个 String
+effect ask() -&gt; String;
+
+-- 声明一个名为 'output' 的效应，接收一个 String 参数，不返回值 (void)
+effect output(message: String); -- -&gt; void 是默认的
+
+-- 声明一个泛型效应 'read_state'，读取类型为 T 的状态
+-- T 必须实现 Default trait (提供默认值)
+effect read_state() -&gt; T where T:- Default;
+
+-- 声明一个可能失败的效应 'write_file'
+-- 它接收路径和数据，返回一个结果，表示成功或一个 IoErr
+effect write_file(path: String, data: Slice&lt;u8&gt;) -&gt; !IoErr void;
+</code></pre>
+<ul>
+<li><code>effect &lt;Name&gt;</code>: 定义效应的名称。</li>
+<li><code>(...)</code>: 参数列表（可选），定义了发出该效应时需要携带的数据。</li>
+<li><code>-&gt; ReturnType</code>: 返回类型（可选，默认为 <code>void</code>），定义了处理器恢复执行时<strong>应该提供</strong>给 Callee 的值的类型。</li>
+<li><code>where ...</code>: 泛型约束（可选）。</li>
+</ul>
+<p>每个 <code>effect</code> 声明定义了一个新的<strong>效应操作签名</strong>。</p>
+<p><strong>3. 发出效应</strong></p>
+<pre><code class="language-flurry">fn user_interaction() -&gt; #[output, ask] String {
+    -- 发出 output 效应，请求打印消息
+    output("What is your name?")#;
+    -- 发出 ask 效应，请求获取输入，并将处理器返回的值赋给 name
+    let name = ask()#;
+    "Hello, " + name
+}
+
+fn read_default_config() -&gt; #[read_state&lt;Config&gt;] Config {
+    -- 发出泛型效应，读取 Config 类型的状态
+    let config = read_state&lt;Config&gt;()#;
+    config
+}
+</code></pre>
+<p><strong>4. 处理与恢复 (<code>handles</code>, <code>#{...}</code>, <code>resume</code>)</strong></p>
+<p>调用者通过安装<strong>效应处理器 (Effect Handler)</strong> 来拦截和处理效应。</p>
+<pre><code class="language-flurry">fn run_interaction() {
+    -- 调用 user_interaction，并为其安装一个处理器
+    let result = user_interaction()# {
+        -- 定义 ask 效应的处理分支
+        ask() =&gt; {
+            print("&gt; "); -- 实际执行输出
+            let input = io.read_line(); -- 实际执行输入
+            input -- 恢复 user_interaction 的执行，并将 input 作为 ask() 的返回值
+        },
+        -- 定义 output 效应的处理分支
+        output(msg) =&gt; { -- 匹配 output(msg) 效应，并绑定参数 msg
+            println(msg); -- 实际执行输出
+        }
+    }
+    println("Final result: {}", result);
+}
+</code></pre>
+<ul>
+<li><strong>安装处理器</strong>: <code>expr# { ... }</code> 语法用于安装处理器。<code>expr</code> 是发出效应的表达式，<code>{ ... }</code> 是处理器的定义。</li>
+<li><strong>处理器分支</strong>: 处理器对效应调用进行模式匹配。每个分支定义了如何处理特定的效应。</li>
+<li><strong>恢复执行</strong>: <code>resume</code> 语句用于将处理器的结果返回给 Callee。通常，处理器会在分支中直接返回值（如 <code>input</code>），而不需要显式地使用 <code>resume</code>。但在某些情况下，可能需要使用 <code>resume</code> 来明确恢复执行。</li>
+<li><strong>处理器的返回值</strong>: 处理器的返回值会被传递给发出效应的函数（Callee），作为该效应的返回值。</li>
+</ul>
+<p><strong>5. 代数效应的类型签名 (<code>#EffectList Type</code>)</strong></p>
+<p>就像错误处理有 <code>!Errors T</code> 类型签名一样，代数效应也需要在函数签名中声明函数<strong>可能</strong>发出的效应。这有助于静态分析和保证效应被处理。</p>
+<ul>
+<li>
+<p><strong>语法</strong>: <code>#EffectList Type</code>，其中 <code>EffectList</code> 是一个编译时已知的效应列表（可能包含具体效应或泛型效应）。</p>
+</li>
+<li>
+<p><strong>示例</strong>:</p>
+<pre><code class="language-flurry">-- 这个函数可能发出 ask 和 output 效应，并最终返回 String
+fn user_interaction() -&gt; #[output, ask] String;
+
+fn read_default_config() -&gt; #[read_state&lt;T&gt;] T where T:- Default;
+
+fn pure_add(a: i32, b: i32) -&gt; #[] i32; -- 或者简写为 -&gt; i32
+</code></pre>
+</li>
+<li>
+<p><strong>效应检查</strong>: 编译器会检查函数体内部的效应调用是否与签名中声明的 <code>EffectList</code> 兼容。</p>
+</li>
+<li>
+<p><strong>Handler 消融规则 (Handler Elimination)</strong>: 设效应处理器可处理的效应集为A, 计算的效应集为B，则将处理器应用与计算后，计算剩余的效应集为B - A。也就是说，处理器会消解掉它所处理的效应，使得最终的计算结果不再携带这些效应。这与错误处理的消减规则类似。</p>
+<pre><code class="language-flurry">fn run_interaction() -&gt; #[] void { -- run_interaction 本身不发出效应
+    -- user_interaction 的类型是 -&gt; #[output, ask] String
+    let result = user_interaction()# { -- 安装处理器
+        ask() =&gt; { ... },
+        output(msg) =&gt; { ... },
+    }
+    println("Final result: {}", result);
+}
+</code></pre>
+<p>这种效应消解规则对于类型系统的健全性和模块化推理至关重要。</p>
+</li>
+</ul>
+<p><strong>6. 为类型定义处理某些 Effect 的能力 (<code>Prefabricated Handlers</code>)</strong></p>
+<p>Flurry 提供了一种独特的机制，允许将<strong>效应处理逻辑直接与某个类型关联</strong>起来，这被称为<strong>预制处理器 (Prefabricated Handlers)(我大概得取个好名字)</strong>。这使得该类型的实例能够“预制”处理特定效应的能力。</p>
+<pre><code class="language-flurry">-- 假设我们有一个管理状态的 Runtime 类型
+struct StateRuntime where T {
+    current_state: T,
+}
+
+impl StateRuntime&lt;T&gt; where T:- Clone {
+    handles write_state(new_state: T) {
+        self.current_state = new_state;
+    }
+
+    handles read_state() -&gt; T {
+        self.current_state.clone()
+    }
+}
+
+--- 使用预制处理器 ---
+fn use_runtime_state(runtime: StateRuntime&lt;T&gt;) -&gt; T where T:- Clone + Default {
+    do {
+        let state = read_state()#; -- 发出效应
+        println("Read state: {any}", state);
+        state
+    }.use(runtime) -- 指示使用 runtime 的预制处理器
+}
+
+test {
+    let rt = StateRuntime&lt;i32&gt; { current_state: 10 }
+    let val = use_runtime_state(rt); -- val 会是 10
+}
+</code></pre>
+<p><strong>总结</strong></p>
+<p>代数效应是 Flurry 区别于许多传统系统级语言的关键特性，有望在并发/异步编程、状态管理、可测试性、DSL 构建等领域带来显著优势。理解代数效应的原理和机制，对于发挥 Flurry 的全部潜力至关重要。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../advanced/type_predicates.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../advanced/macros.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../advanced/type_predicates.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../advanced/macros.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

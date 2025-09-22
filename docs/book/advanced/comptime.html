@@ -1,0 +1,376 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>编译时计算 (comptime) - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="编译时计算-comptime"><a class="header" href="#编译时计算-comptime">编译时计算 (<code>comptime</code>)</a></h2>
+<p>Flurry 的一个核心且强大的特性是<strong>编译时计算 (Compile-Time Computation)</strong>，通常以关键字 <code>comptime</code> 体现。该机制允许开发者在编译阶段执行代码，从而实现高级别的元编程、优化和类型安全保证。</p>
+<p><strong>Flurry 的两级计算模型</strong></p>
+<p>理解 <code>comptime</code> 的基础在于认识 Flurry 的<strong>两级计算模型 (Two-Level Computation Model)</strong>，该模型明确区分了两个不同的执行阶段：</p>
+<ol>
+<li><strong>编译时 (Comptime)</strong>: 编译器工作的阶段。在此阶段，Flurry 不仅执行传统的编译任务（如语法分析、类型检查、代码生成），还提供了一个功能强大的<strong>编译时运行时 (Comptime Runtime)</strong>，用于执行标记为 <code>comptime</code> 的代码。</li>
+<li><strong>运行时 (Runtime)</strong>: 编译产物（即可执行程序）被最终用户执行的阶段。</li>
+</ol>
+<p>这种设计使得许多传统上必须在运行时完成的操作得以在编译时执行。其主要优势包括：实现零成本抽象、提升运行时性能、增强类型安全以及提供强大的元编程能力。</p>
+<p><strong>编译时与运行时上下文的区分</strong></p>
+<p>准确识别代码执行的上下文至关重要：</p>
+<ul>
+<li><strong>运行时上下文 (Runtime Context)</strong>:
+<ul>
+<li>常规函数（未使用 <code>comptime</code> 标记的 <code>fn</code>）的函数体内部。</li>
+<li>传递给常规函数的运行时参数的值。</li>
+</ul>
+</li>
+<li><strong>编译时上下文 (Comptime Context)</strong>:
+<ul>
+<li><strong>所有类型表达式 (<code>Type</code>) 和 Trait 表达式</strong>: 类型和 Trait 在 Flurry 中是一等公民，它们在编译时被定义、操作和求值。</li>
+<li><strong>所有属性 (<code>.</code> 或 <code>^</code>)</strong>: 附加到类型、函数、字段等的属性，其求值发生在编译时。</li>
+<li><strong>顶级命名空间 (Top-level Namespace) 中的定义</strong>: 全局作用域下的声明（如 <code>const</code>, <code>fn</code>, <code>struct</code> 定义）通常在编译时处理。</li>
+<li><strong>常量 (<code>const</code>) 的初始化表达式</strong>: <code>const</code> 声明要求其值必须在编译时确定。</li>
+<li><strong><code>comptime</code> 函数的参数和函数体</strong>: 标记为 <code>comptime</code> 的函数及其参数完全在编译时处理和执行。</li>
+<li><strong>常规函数的 <code>comptime</code> 参数</strong>: 常规函数可以接收 <code>comptime</code> 参数，这些参数的值在编译时确定并传入。</li>
+<li><strong>特定的语法结构</strong>: 某些语法结构，如 <code>pattern_from_expr</code> 中的 <code>&lt;expr&gt;</code> 部分、结构体字段的默认值表达式等，要求其表达式必须是编译时可求值的。</li>
+<li><strong><code>inline</code> 控制流结构的条件/控制部分</strong>: 对于 <code>inline if</code>, <code>inline for</code>, <code>inline when</code> 等结构，其<strong>条件表达式</strong>或<strong>迭代控制逻辑</strong>在编译时求值。其<strong>内部代码块</strong>的执行上下文（编译时或运行时）则取决于 <code>inline</code> 结构自身所处的上下文。</li>
+</ul>
+</li>
+</ul>
+<p><strong>Flurry 结构：作为编译时值的语言构件</strong></p>
+<p>一个核心概念是：在 Flurry 的编译时环境中，许多语言的基本构件——例如<strong>结构体定义 (<code>struct</code>)、函数定义 (<code>fn</code>)、枚举定义 (<code>enum</code>)、Trait 定义 (<code>trait</code>)</strong> 等——本身被视为<strong>编译时值 (comptime values)</strong>。</p>
+<p>这意味着这些定义不仅是声明，更是可以在编译时被操作和传递的数据。</p>
+<p>示例：</p>
+<pre><code class="language-flurry">const Student = struct {
+    name: String,
+    age: u8,
+}
+
+-- greet: pure comptime fn&lt;T:- ToString&gt; -&gt; fn(T) -&gt; String,
+-- 可简写为 for&lt;T:- ToString&gt; fn(T) -&gt; String
+fn greet(name: T) -&gt; String where T:- ToString {
+    "Hello, " + name.to_string()
+}
+
+</code></pre>
+<p>Flurry 可能还提供更底层的编译时 API，用于以编程方式构建这些语言构件：</p>
+<pre><code class="language-flurry">-- 使用假设的编译时 API 动态构建结构体类型
+let DynamicStruct = Type.Struct.new(
+    .fields = { -- 一个编译时 object (异构映射)
+        .id    { .type Uuid }, -- 字段名和类型
+        .value { .type str, .default "empty" }, -- 包含默认值
+    }
+);
+-- 在编译时对生成的类型进行内省 (Introspection)
+let fields = Type.Struct.fields(DynamicStruct); -- 获取字段信息
+assert(fields[1].get(.name, String)? == "value"); -- 安全地获取字段名
+assert(fields[1].get(.default, String)? == "empty"); -- 安全地获取默认值
+</code></pre>
+<p>这种将语言构件视为编译时值的范式，使 <code>comptime</code> 超越了简单的常量折叠，成为一个强大的<strong>类型和代码生成引擎</strong>。</p>
+<p><strong>编译时类型系统的特性：依赖类型与渐进类型</strong></p>
+<p>Flurry 的编译时类型系统具备两个关键特性，增强了其表达能力和灵活性：</p>
+<ol>
+<li>
+<p><strong>依赖类型 (Dependent Types)</strong>: 函数（或其他接受参数的结构）的<strong>后续参数类型</strong>可以<strong>依赖于先前 <code>comptime</code> 参数的值</strong>。这允许创建高度灵活且类型安全的接口。<code>println</code> 函数是典型的例子，其可变参数 <code>varargs</code> 的具体类型由 <code>comptime</code> 参数 <code>format</code> 字符串的值在编译时确定。</p>
+<pre><code class="language-flurry">-- varargs的类型是一个元组，从fmt.Parse(format)求值而出
+fn println(comptime format: str, ...varargs: fmt.Parse(format)) {
+    ...
+    inline for v in varargs {
+        const T = v'type;
+        inline when {
+            T: str =&gt; stdio.write_all(v),
+            T:- Display =&gt; stdio.write_all(c.to_string().as_str()),
+            T: usize =&gt; stdio.write_all(fmt.format_int(v)),
+            ...
+        }
+    }
+}
+</code></pre>
+</li>
+<li>
+<p><strong>渐进类型 (Gradual Typing)</strong>: 编译时的容器类型，如 <code>object</code>（异构键值对）和 <code>List&lt;Any&gt;</code>（异构列表），允许存储<strong>不同类型的值</strong>。Flurry 提供了渐进类型的访问机制来处理这种异构性：</p>
+<ul>
+<li><strong>类型安全的获取 (<code>.get(key, ExpectedType: Type) -&gt; ?ExpectedType</code>)</strong>: 尝试获取指定键且类型为 <code>ExpectedType</code> 的值。</li>
+</ul>
+<pre><code class="language-flurry">    let config = { .port 8080, .host "localhost", .enable_tls true } -- 编译时 object
+
+    -- 类型安全获取
+    let port: ?i32 = config.get(.port, i32);
+    assert(port? == 8080);
+    let host: ?String = config.get(.host, String);
+    assert(host? == "localhost");
+    let timeout: ?u64 = config.get(.timeout, u64);
+    assert(timeout == null);
+</code></pre>
+<p>渐进类型为编译时处理结构未知或异构的数据提供了必要的灵活性。</p>
+</li>
+</ol>
+<p><strong>编译时与运行时的交互机制</strong></p>
+<p>尽管编译时和运行时是不同的阶段，Flurry 提供了明确的机制允许它们交互：</p>
+<ul>
+<li>
+<p><strong>沉降 (Lowering)</strong>: 指将<strong>编译时可知的值</strong>作为常量嵌入到运行时代码中作为运行时值的过程。这通常是隐式发生的。例如，在运行时代码 <code>let x = 10;</code> 中，字面量 <code>10</code> 是一个编译时整数值，被沉降为运行时的整数值。</p>
+</li>
+<li>
+<p><strong><code>comptime { ... }</code> 块</strong>: 允许在<strong>运行时上下文</strong>中嵌入一段需要在<strong>编译时</strong>执行的代码。此代码块通常用于计算一个编译时值，该值随后可以通过沉降被外围的运行时代码使用。</p>
+<pre><code class="language-flurry">fn get_platform_info() -&gt; String {
+    -- os_name 在此被沉降为运行时字符串常量
+    let os_name: str = inline if build.target.os == .linux {
+        "Linux" -- 编译时字符串
+    } else if build.target.os == .windows {
+        "Windows" -- 编译时字符串
+    } else {
+        "Unknown OS" -- 编译时字符串
+    }
+
+    fmt.format("Running on: {}", os_name)
+}
+</code></pre>
+</li>
+<li>
+<p><strong><code>inline</code> 控制流 (<code>inline if</code>/<code>when</code>/<code>for</code>/<code>match</code>)</strong>: 这些是关键的<strong>编译时控制流</strong>结构。它们根据编译时条件或数据，在编译阶段选择性地生成、省略或重复代码片段。</p>
+<ul>
+<li><code>inline if</code>/<code>when</code>: 用于条件编译，根据编译时布尔表达式或类型匹配决定包含哪个代码分支。</li>
+<li><code>inline for</code>: 用于编译时循环展开（例如，遍历编译时已知的数组或元组）或根据编译时集合生成代码。</li>
+</ul>
+</li>
+</ul>
+<p><strong>总结：<code>comptime</code> 的核心价值</strong></p>
+<p>Flurry 的 <code>comptime</code> 机制提供了一个功能完备的编译时编程环境，其核心特征包括：</p>
+<ul>
+<li><strong>两级计算模型</strong>: 清晰分离编译时与运行时。</li>
+<li><strong>语言构件作为编译时值</strong>: 类型、函数等可在编译时被操作。</li>
+<li><strong>依赖类型与渐进类型</strong>: 增强了编译时类型系统的表达力和灵活性。</li>
+<li><strong>编译时控制流 (<code>inline</code>)</strong>: 实现代码生成和特化。</li>
+<li><strong>类型谓词</strong>: 提供强大的编译时约束能力。</li>
+</ul>
+<p>通过 <code>comptime</code>，Flurry 实现了：</p>
+<ul>
+<li><strong>零成本抽象</strong>: 高级编程构造在编译时被解析和优化，不引入运行时开销。</li>
+<li><strong>强大的元编程能力</strong>: 支持在编译阶段生成代码、构建类型、处理配置等。</li>
+<li><strong>增强的类型安全</strong>: 允许在编译时执行更深入的检查（例如，格式化字符串的类型安全验证）。</li>
+<li><strong>潜在的性能优化</strong>: 通过编译时特化、常量计算和代码生成，可以产出高度优化的运行时代码。</li>
+</ul>
+<p>掌握 <code>comptime</code> 是充分利用 Flurry 语言潜力的关键，它为开发者提供了在编译阶段深度塑造程序结构和行为的能力。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../core/traits_polymorphism/using.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../advanced/type_predicates.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../core/traits_polymorphism/using.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../advanced/type_predicates.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

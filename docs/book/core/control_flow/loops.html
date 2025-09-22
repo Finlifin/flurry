@@ -1,0 +1,334 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>循环语句 (for, while) - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="循环语句-looping-statements"><a class="header" href="#循环语句-looping-statements">循环语句 (Looping Statements)</a></h1>
+<p>循环语句允许程序重复执行一段代码，直到满足特定条件为止。Flurry 提供了 <code>for</code> 和 <code>while</code> 两种主要的循环结构。</p>
+<h2 id="for-循环"><a class="header" href="#for-循环"><code>for</code> 循环</a></h2>
+<p><code>for</code> 循环主要用于<strong>迭代</strong>一个序列或集合中的元素。它可以遍历数组、切片、范围、迭代器或其他可迭代对象。</p>
+<p><strong>基本语法 (遍历迭代器):</strong></p>
+<pre><code class="language-flurry">for &lt;pattern&gt; in &lt;iterable_expr&gt; {
+    -- Loop body, executed for each item
+}
+</code></pre>
+<ul>
+<li><code>&lt;iterable_expr&gt;</code>: 必须是一个实现了IntoIterator或Iterator的表达式。</li>
+<li><code>&lt;pattern&gt;</code>: 用于在每次迭代中绑定从迭代器获取的当前元素。可以使用简单的变量名，也可以使用更复杂的模式（如元组 <code>(index, value)</code>）。</li>
+<li>循环体 <code>{ ... }</code>: 对迭代器产生的每个元素执行一次。当迭代器耗尽时，循环结束。</li>
+</ul>
+<p><strong>示例:</strong></p>
+<pre><code class="language-flurry">let numbers = [10, 20, 30];
+
+-- 遍历数组元素
+for num in numbers {
+    println("Number: {}", num);
+}
+-- 输出:
+-- Number: 10
+-- Number: 20
+-- Number: 30
+
+-- 遍历范围
+for i in 0..3 { -- 遍历 0, 1, 2
+    println("Index: {}", i);
+}
+
+-- 遍历并获取索引
+for (index, value) in numbers.into_iter().enumerate() {
+    println("Item at {}: {}", index, value);
+}
+</code></pre>
+<p><strong>循环标签 (Loop Labels)</strong>: 可以为 <code>for</code> 循环（以及 <code>while</code> 循环）添加标签，用于在嵌套循环中精确控制 <code>break</code> 和 <code>continue</code> 的目标。标签以 <code>:</code> 结尾。</p>
+<pre><code class="language-flurry">for:outer i in 0..3 {
+    for:inner j in 0..3 {
+        continue outer if i == 1 and j == 1; -- 跳过外层循环的剩余部分，开始下一次外层迭代
+        break outer if i == 2 and j == 0; -- 完全跳出外层循环
+        println("i={}, j={}", i, j);
+    }
+}
+</code></pre>
+<h2 id="while-循环"><a class="header" href="#while-循环"><code>while</code> 循环</a></h2>
+<p><code>while</code> 循环会在其条件表达式求值为 <code>true</code> 时重复执行代码块。</p>
+<p><strong>基本语法:</strong></p>
+<pre><code class="language-flurry">while &lt;condition_expr&gt; {
+    -- Loop body, executed as long as condition_expr is true
+}
+</code></pre>
+<ul>
+<li><code>&lt;condition_expr&gt;</code>: 在每次循环迭代<strong>之前</strong>进行求值。如果为 <code>true</code>，则执行循环体；如果为 <code>false</code>，则退出循环。</li>
+</ul>
+<p><strong>示例:</strong></p>
+<pre><code class="language-flurry">let count = 0;
+while count &lt; 3 {
+    println("Count is: {}", count);
+    count += 1;
+}
+-- 输出:
+-- Count is: 0
+-- Count is: 1
+-- Count is: 2
+
+-- 无限循环 (通常与 break 结合使用)
+while true {
+    let input = read_input()?; -- 假设 read_input 可能返回错误
+    break if input == "quit"; -- 退出无限循环
+    process(input);
+}
+</code></pre>
+<p><strong><code>while is</code> (模式匹配循环)</strong>: Flurry 还提供了将模式匹配与 <code>while</code> 结合的循环方式，允许在每次迭代时对某个表达式的值进行模式匹配，并在匹配成功时继续循环。</p>
+<p><strong>基本语法:</strong></p>
+<pre><code class="language-flurry">while &lt;expr&gt; is &lt;pattern&gt; {
+    -- Loop body, executed if expr matches pattern
+    -- pattern 中绑定的变量在此可用
+}
+</code></pre>
+<ul>
+<li><code>&lt;expr&gt;</code>: 每次循环前求值的表达式。</li>
+<li><code>&lt;pattern&gt;</code>: 用于匹配 <code>&lt;expr&gt;</code> 结果的模式。</li>
+<li>只有当 <code>&lt;expr&gt;</code> 的值成功匹配 <code>&lt;pattern&gt;</code> 时，循环体才会执行。模式中绑定的变量可以在循环体中使用。当匹配失败时，循环终止。</li>
+</ul>
+<p><strong>示例 (处理 Option):</strong></p>
+<pre><code class="language-flurry">let optional_value = 5;
+
+while optional_value is some? { -- 只要 optional_value 是 some? 就继续
+    println("Processing value: {}", some);
+    -- 更新 optional_value 以便最终退出循环
+    optional_value = if some &gt; 0 { some - 1 } else { null }
+}
+-- 输出:
+-- Processing value: 5
+-- Processing value: 4
+-- Processing value: 3
+-- Processing value: 2
+-- Processing value: 1
+-- Processing value: 0
+
+println("Loop finished.");
+</code></pre>
+<p>这对于处理迭代器、队列或其他可能返回“哨兵值”（如 <code>null</code>, <code>EndOfFile</code>）来表示结束的数据源非常有用。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/control_flow/conditional.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/control_flow/transfer.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/control_flow/conditional.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/control_flow/transfer.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

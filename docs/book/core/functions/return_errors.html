@@ -1,0 +1,313 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>返回值与错误处理 (!) - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="返回值与错误处理-"><a class="header" href="#返回值与错误处理-">返回值与错误处理 (!)</a></h1>
+<p>函数通过返回值将其计算结果或状态传递给调用者。Flurry 提供了标准的返回值机制，并内置了一套用于处理可恢复错误的、基于类型系统的机制。</p>
+<h2 id="返回值-return-values"><a class="header" href="#返回值-return-values">返回值 (Return Values)</a></h2>
+<p>使用 <code>-&gt; ReturnType</code> 在函数签名中指定返回值的类型。</p>
+<ul>
+<li><strong>隐式返回</strong>: 如果函数体的最后一个表达式的类型与 <code>ReturnType</code> 兼容，该表达式的值将自动作为返回值，无需 <code>return</code> 关键字。
+<pre><code class="language-flurry">fn double(x: i32) -&gt; i32 {
+    x * 2 -- 表达式 x * 2 的值被隐式返回
+}
+</code></pre>
+</li>
+<li><strong>显式返回</strong>: 使用 <code>return</code> 关键字可以从函数体的任何位置提前返回一个值。
+<pre><code class="language-flurry">fn find_char(s: String, target: char) -&gt; ?usize { -- 返回 ?usize
+    for (i, c) in s.chars().enumerate() {
+        return i if c == target; -- 找到，提前返回 Some(index)
+    }
+    null -- 循环结束都没找到，返回 null
+}
+</code></pre>
+</li>
+<li><strong><code>void</code> 返回类型</strong>: 如果函数不返回有意义的值，返回类型为 <code>void</code>。可以省略 <code>-&gt; void</code>。
+<pre><code class="language-flurry">fn print_message(msg: String) { -- 隐式返回 void
+    println("{}", msg);
+}
+</code></pre>
+</li>
+</ul>
+<h2 id="错误处理-errors-t"><a class="header" href="#错误处理-errors-t">错误处理 (<code>!Errors T</code>)</a></h2>
+<p>Flurry 提供了一种内置的、类型安全的方式来处理函数中可能发生的可恢复错误，避免了 C 的错误码、Java 的检查异常或 Go 的显式 <code>if err != nil</code> 的某些缺点。</p>
+<p><strong><code>!Errors T</code> 返回类型</strong>:</p>
+<ul>
+<li>当一个函数可能成功并返回 <code>T</code> 类型的值，或者失败并返回多种可能的错误类型之一时，可以使用 <code>!Errors T</code> 作为返回类型。</li>
+<li><code>Errors</code>: 通常是一个<strong>编译时已知的类型列表</strong>（或单个枚举类型），代表该函数可能返回的所有错误类型。</li>
+</ul>
+<p><strong>语法:</strong></p>
+<pre><code class="language-flurry">-- 可能返回 u32，或 FileNotFoundErr, 或 PermissionDenied 错误
+fn read_config_value(path: String) -&gt; ![FileNotFoundErr, PermissionDenied] u32 {
+    -- ... 函数体 ...
+}
+</code></pre>
+<p><strong>错误传播 (<code>expr!</code>)</strong>:</p>
+<p>当调用一个返回 <code>!Errors T</code> 类型的函数时，可以使用后缀操作符 <code>!</code> 简洁地传播错误。</p>
+<ul>
+<li>如果 <code>expr</code> 的结果匹配 <code>value!</code>，<code>expr!</code> 会解包得到 <code>value</code>。</li>
+<li>如果 <code>expr</code> 的结果匹配 <code>error e</code>，<code>expr!</code> 会<strong>立即从当前函数返回</strong>这个 <code>e</code> 值。<strong>前提是当前函数的返回类型也必须是 <code>!Errors' T'</code>，并且 <code>Errors'</code> 包含 <code>e'type</code>（或者可以自动转换/融合）</strong>。</li>
+</ul>
+<pre><code class="language-flurry">struct Config { {- ... -} }
+
+fn parse_config(content: String) -&gt; !ParseErr Config { {- ... -} }
+fn read_file(path: String) -&gt; !IoErr String { {- ... -} }
+
+pub const Errors = [IoErr, ParseErr, NetworkErr];
+-- load_config 可能返回
+fn load_config(path: String) -&gt; !Errors Config {
+    -- read_file返回值的错误负载必须是Errors的子集或元素
+    let content = read_file(path)!;
+    let config = parse_config(content)!;
+
+    config
+}
+</code></pre>
+<p><code>!</code> 操作符极大地简化了错误传递的样板代码。</p>
+<p><strong>错误处理 (<code>expr! { ... }</code>)</strong>:</p>
+<p>如果你想在错误发生的地方<strong>立即处理</strong>它，而不是直接传播，可以使用 <code>expr! { ... }</code> 块。</p>
+<ul>
+<li>它允许你为 <code>expr</code> 可能返回的不同错误类型提供匹配分支。</li>
+</ul>
+<pre><code class="language-flurry">fn get_data_or_default(source: DataSource) -&gt; Data {
+    let result = source.fetch_data()! { -- 处理 fetch_data 可能的错误
+        .NetworkErr(err) =&gt; log("Network failed: {}", err),
+        .AuthErr =&gt; {
+            source.re_authenticate()! {
+                {- ... -}
+            }
+        },
+        _ as e =&gt; log("Unhandled fetch error: {}", e'tag_name),
+        catch e =&gt; return Data.default(),
+    }
+    result
+}
+</code></pre>
+<p><strong>自动枚举融合</strong>:</p>
+<p>当一个函数调用多个可能返回不同错误集的函数时，编译器可以<strong>自动推导</strong>并<strong>融合</strong>所有可能的错误类型，形成当前函数签名所需的 <code>Errors</code> 集合。详见<a href="advanced/error_handling/fusion.html">自动枚举融合</a>。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/functions/parameters.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/data_structures.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/functions/parameters.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/data_structures.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

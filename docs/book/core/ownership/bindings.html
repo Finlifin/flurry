@@ -1,0 +1,283 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>声明与绑定 - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="声明与绑定"><a class="header" href="#声明与绑定">声明与绑定</a></h2>
+<p>在 Flurry 中，我们将值与名称相关联的过程称为<strong>绑定 (Binding)</strong>。通过绑定，我们可以方便地引用和操作数据。Flurry 提供了两种主要的绑定方式：<code>let</code> 用于变量绑定，<code>const</code> 用于常量绑定。</p>
+<h3 id="变量绑定-let"><a class="header" href="#变量绑定-let">变量绑定 (<code>let</code>)</a></h3>
+<p>使用 <code>let</code> 关键字可以创建一个变量绑定。</p>
+<pre><code class="language-flurry">let message = "Hello, Flurry!";
+let count = 0;
+let pi: f64 = 3.14159; -- 显式类型注解
+</code></pre>
+<ul>
+<li><strong>类型推断</strong>: Flurry 通常支持类型推断。如果初始化表达式的类型可以明确推断出来，你可以省略类型注解（如 <code>message</code> 和 <code>count</code>）。</li>
+<li><strong>显式注解</strong>: 你也可以使用 <code>:</code> 后跟类型来显式指定变量的类型（如 <code>pi</code>）。在函数签名、结构体字段等需要明确类型的地方，类型注解通常是必需的。</li>
+</ul>
+<p><strong>可变性 (Mutability)</strong>:</p>
+<p>与某些强制区分可变与不可变绑定的语言（如 Rust 的 <code>let</code> vs <code>let</code>）不同，Flurry（类似于 Zig 的设计思路）在 <code>let</code> 绑定层面<strong>可能不严格强制区分可变性</strong>。这意味着通过 <code>let</code> 绑定的变量<strong>默认可能是可变的</strong>。</p>
+<pre><code class="language-flurry">let counter = 0;
+counter = counter + 1; -- 假设 let 默认允许修改
+
+-- 如果需要强制不可变绑定，语言可能有其他机制，
+-- 或者依赖于后续的使用方式分析（例如，传递不可变引用）。
+-- 目前我们假设 let 绑定允许后续赋值。
+</code></pre>
+<p><em>TODO: 明确 Flurry <code>let</code> 的确切可变性语义。是默认可变，还是有单独的 <code>var</code> 关键字，或者通过其他方式控制？当前暂按“默认可变”或“不强制区分”处理。</em></p>
+<p>这种设计选择旨在简化变量声明，将可变性控制的重心更多地放在类型系统（例如，可变引用 <code>*mut T</code> vs. 不可变引用 <code>*T</code>）和副作用分析上。</p>
+<h3 id="常量绑定-const"><a class="header" href="#常量绑定-const">常量绑定 (<code>const</code>)</a></h3>
+<p>使用 <code>const</code> 关键字可以创建一个常量绑定。常量与变量的关键区别在于：</p>
+<ol>
+<li><strong>编译时求值</strong>: <code>const</code> 绑定的值<strong>必须在编译时就能完全确定</strong>。初始化表达式必须是一个编译时常量表达式。</li>
+<li><strong>完全不可变</strong>: 常量的值在程序运行期间不能被改变。它们通常会被编译器直接内联或放入只读内存段。</li>
+<li><strong>类型注解通常需要</strong>: 常量的类型通常需要显式注解，因为编译器不会像对 <code>let</code> 那样进行复杂的类型推断（尽管简单的字面量类型可能可以推断）。</li>
+</ol>
+<pre><code class="language-flurry">const MAX_USERS: usize = 1000;
+const DEFAULT_TIMEOUT: Duration = Duration.seconds(5); -- 假设 Duration.seconds 是 comptime 函数
+const APP_NAME: str = "Flurry Core System"; -- 编译时字符串
+
+-- const RUNTIME_VALUE: i32 = get_runtime_input(); -- 非法，初始化器不是编译时常量
+</code></pre>
+<p>常量非常适合用于定义程序中不变的配置值、标志、或者需要在编译时进行计算和使用的值。它们是 Flurry 强大的 <code>comptime</code> 能力的基础体现之一。</p>
+<h3 id="作用域与遮蔽-scope--shadowing"><a class="header" href="#作用域与遮蔽-scope--shadowing">作用域与遮蔽 (Scope &amp; Shadowing)</a></h3>
+<p>Flurry 中的绑定遵循词法作用域规则。一个绑定只在其声明的代码块（及其子块）内有效。</p>
+<pre><code class="language-flurry">fn main() {
+    let x = 10;
+    { -- 进入新的作用域
+        let y = 20;
+        println("Inner: x = {i32}, y = {i32}", x, y); -- x 和 y 都可见
+        let x = 5; -- 在内层作用域 "遮蔽" 外层的 x
+        println("Inner (shadowed): x = {i32}", x); -- 输出 5
+    } -- y 在此离开作用域
+    -- println("Outer: y = {}", y); -- 错误，y 不在此作用域
+    println("Outer: x = {i32}", x); -- 输出 10，内层的 x 遮蔽结束
+}
+</code></pre>
+<p>Flurry 允许在内部作用域使用 <code>let</code> 重新声明一个同名变量，这会<strong>遮蔽 (Shadow)</strong> 外部作用域的同名变量。被遮蔽的变量在内部作用域内暂时不可访问，直到内部作用域结束。遮蔽是一个有用的特性，例如用于类型转换或值的重新绑定，但过度使用可能会降低代码清晰度。</p>
+<p>理解 <code>let</code> 和 <code>const</code> 的区别以及作用域规则，是管理程序状态和数据生命周期的基础。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../core/ownership.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../core/ownership/affine_move.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../core/ownership.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../core/ownership/affine_move.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

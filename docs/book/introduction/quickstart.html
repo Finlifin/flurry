@@ -1,0 +1,355 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>快速入门 - Flurry语言手册</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flurry语言手册</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="快速入门"><a class="header" href="#快速入门">快速入门</a></h1>
+<p>本章旨在让您快速领略 Flurry 语言的风采。我们将通过一个简单的示例展示 Flurry 的一些核心特性，并指导您完成基本的安装和运行流程。我们的目标不是详尽解释所有细节，而是让您对 Flurry 的编程体验有一个初步的感受。</p>
+<h2 id="hello-infrastructure---一个-flurry-示例"><a class="header" href="#hello-infrastructure---一个-flurry-示例">"Hello, Infrastructure!" - 一个 Flurry 示例</a></h2>
+<p>让我们来看一个稍微超越传统 "Hello, World!" 的例子，它将触及 Flurry 的编译时计算和可选类型：</p>
+<pre><code class="language-flurry">-- src/main.fl
+
+-- 使用标准库的打印功能
+use std.io.println;
+-- 使用构建信息模块 (假设存在)
+use build;
+
+-- 定义一个编译时常量，存储构建目标操作系统
+const TARGET_OS: str = comptime build.target.os'tag_name; -- 取像操作获取 tag 名
+
+-- 程序入口点 main 函数
+pub fn main() -&gt; void {
+    let user_name: ?String = get_user_from_env(); -- 返回可选类型 ?String
+
+    -- 编译时条件分支 (inline if)
+    inline if TARGET_OS == "windows" {
+        println("Detected Windows!");
+    } else if TARGET_OS == "linux" {
+        println("Running on Linux!");
+    } else {
+        println("Running on an unknown OS: {str}", TARGET_OS); -- 字符串插值
+    }
+
+    -- 处理可选类型
+    if user_name is {
+        some name =&gt; { -- 模式匹配解构 Some
+            println("Hello, {str}!", name); -- {str} 是格式化说明符
+        }
+        null =&gt; { -- 匹配 null
+            println("Hello, anonymous user!");
+        }
+    }
+}
+
+-- 假设的函数，从环境变量获取用户名，可能失败
+fn get_user_from_env() -&gt; ?String {
+    -- ... (实际实现会读取环境变量) ...
+    -- 模拟可能找到或找不到
+    if std.random.bool() { -- 假设有随机库
+         "FlurryDev".to_string() -- 返回 String，自动提升为 ?String
+    } else {
+         null -- 返回 null
+    }
+}
+
+</code></pre>
+<p><strong>这个简单的例子展示了:</strong></p>
+<ul>
+<li><strong>模块导入 (<code>use</code>)</strong>: 如何引入外部模块的功能。</li>
+<li><strong>编译时计算 (<code>comptime</code>)</strong>: 如何在编译时获取信息（如构建目标）并将其用于代码逻辑。</li>
+<li><strong>取像操作 (<code>'tag_name</code>)</strong>: 如何获取一个值（这里是编译时符号）的元信息。</li>
+<li><strong>编译时条件 (<code>inline if</code>)</strong>: 如何根据编译时条件选择性地包含代码。</li>
+<li><strong>可选类型 (<code>?String</code>)</strong>: 如何表示可能不存在的值。</li>
+<li><strong>模式匹配 (<code>if is { some =&gt; ..., null =&gt; ... }</code>)</strong>: 如何安全地处理可选类型。</li>
+<li><strong>字符串插值 (<code>"{str}"</code>, <code>$variable</code>)</strong>: (假设 <code>${}</code> 用于编译时插值，<code>{str}</code> 用于运行时格式化)。</li>
+<li><strong>自动类型提升</strong>: <code>String</code> 和 <code>null</code> 如何根据函数返回类型 <code>?String</code> 自动提升。</li>
+</ul>
+<h2 id="核心特性概览-亮点速览"><a class="header" href="#核心特性概览-亮点速览">核心特性概览 (亮点速览)</a></h2>
+<p>除了上面的例子，Flurry 还拥有更多令人兴奋的特性：</p>
+<ul>
+<li><strong>代数效应 (Algebraic Effects)</strong>: 以结构化、可组合的方式处理 IO、并发、错误等副作用。
+<pre><code class="language-flurry">effect Ask(question: String) -&gt; String; -- 定义效应
+fn greet() -&gt; #Ask void { -- 标记函数可能发出 Ask 效应
+    let name = perform Ask("What's your name?"); -- 发出效应
+    println("Hello, {str}!", name);
+}
+greet() # { -- 提供 Handler
+    Ask(q) =&gt; { println("Answering: {str}", q); resume "Flurry"; } -- 处理效应并恢复
+}
+</code></pre>
+</li>
+<li><strong>强大的模式匹配</strong>: 超越简单的值匹配，支持解构、范围、守卫、类型匹配等。
+<pre><code class="language-flurry">match response {
+    { status: 200, body } =&gt; process_ok(body),
+    { status: 404 } =&gt; log_not_found(),
+    { status: 4xx } if is_client_error(status) =&gt; handle_client_error(status), -- 范围/通配符与守卫
+    _ =&gt; handle_other_error(),
+}
+</code></pre>
+</li>
+<li><strong><code>expr object</code> DSL 构建</strong>: 以极其声明式的方式构建复杂数据结构。
+<pre><code class="language-flurry">-- (之前 Web API 示例中的查询或响应构建)
+let query = Product.query {
+    .limit 10,
+    .sort "price",
+    .filter &lt;{ category: "books", price: ..100.0 }&gt;, -- &lt;{...}&gt; 模式字面量
+}
+</code></pre>
+</li>
+<li><strong><code>extend</code> 与字面量拓展</strong>:
+<pre><code class="language-flurry">extend u64 { fn kb(self) -&gt; usize { self * 1024 } }
+let buffer_size = 4kb; -- 等于 4 * 1024
+</code></pre>
+</li>
+<li><strong>类型即代码 (<code>comptime</code>)</strong>: 在编译时操作类型、生成代码。
+<pre><code class="language-flurry">-- 生成特定大小的数组类型
+comptime let MyArrayType = Type.Array(i32, 10);
+let arr: MyArrayType = uninitialized;
+</code></pre>
+</li>
+</ul>
+<p>这仅仅是冰山一角！Flurry 的设计充满了各种精心设计的特性，旨在让系统编程更安全、更高效、更富有表现力。</p>
+<h2 id="安装与运行-暂定"><a class="header" href="#安装与运行-暂定">安装与运行 (暂定)</a></h2>
+<p><em>TODO: 在此部分添加关于如何获取 Flurry 编译器/工具链（例如，下载预编译版本、从源码构建）、设置开发环境以及编译运行第一个示例（<code>hello_infrastructure</code>）的具体步骤。</em></p>
+<p>例如：</p>
+<ol>
+<li><strong>下载</strong>: 前往 <a href="link-to-flurry-repo-or-website">Flurry 官方网站/仓库</a> 下载最新的编译器。</li>
+<li><strong>安装</strong>: 解压或运行安装程序，并将 Flurry 可执行文件路径添加到系统 <code>PATH</code>。</li>
+<li><strong>验证</strong>: 打开终端，运行 <code>flurry --version</code> 确认安装成功。</li>
+<li><strong>创建项目</strong>: <code>mkdir hello_flurry &amp;&amp; cd hello_flurry</code></li>
+<li><strong>创建 <code>src/main.fl</code></strong>: 将上面的示例代码粘贴进去。</li>
+<li><strong>创建 <code>package.fl</code></strong> (最简形式，假设需要)：
+<pre><code class="language-flurry">-- package.fl
+{ .name "hello_flurry", .type .exe }
+</code></pre>
+</li>
+<li><strong>编译</strong>: <code>flurry build</code></li>
+<li><strong>运行</strong>: <code>.build/hello_flurry</code> (或 Windows 上的 <code>.build\hello_flurry.exe</code>)</li>
+</ol>
+<p>(以上步骤是假设性的，需要根据实际的工具链进行调整。)</p>
+<p>现在，您已经对 Flurry 有了初步的认识。准备好深入探索了吗？接下来的章节将带您详细了解 Flurry 的各项核心特性。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../introduction/vision.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../introduction/comptime_vision.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../introduction/vision.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../introduction/comptime_vision.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>
